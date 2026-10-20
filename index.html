@@ -34,6 +34,7 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 /* top-right toolbar: one glass pill of line icons */
 #bar{position:fixed;right:calc(env(safe-area-inset-right,0px) + 16px);top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;align-items:center;gap:2px;padding:5px 8px;z-index:6;border-radius:16px;
  background:rgba(52,30,52,.42);border:1px solid var(--line);backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);box-shadow:0 6px 22px rgba(30,10,30,.25)}
+#bar a{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:var(--fg);transition:background .15s}#bar a:hover{background:rgba(255,236,214,.16)}
 #bar button{width:38px;height:38px;padding:0;border:0;border-radius:11px;background:transparent;display:grid;place-items:center;color:var(--fg);backdrop-filter:none;-webkit-backdrop-filter:none;letter-spacing:0;transition:background .15s,transform .15s}
 #bar button:hover{background:rgba(255,236,214,.16)}#bar button:active{transform:scale(.9)}
 #bar svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
@@ -42,7 +43,7 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 #musicBtn .slash{display:none}#musicBtn.off{opacity:.55}#musicBtn.off .slash{display:inline}
 #fsBtn .ex{display:none}#fsBtn.on .en{display:none}#fsBtn.on .ex{display:inline}#fsBtn.no{display:none}
 #pauseBtn,#pauseSep{display:none!important}body.running #pauseBtn{display:grid!important}body.running #pauseSep{display:block!important}
-@media (max-width:420px){#bar button{width:34px;height:34px}#bar svg{width:19px;height:19px}}
+@media (max-width:420px){#bar button,#bar a{width:34px;height:34px}#bar svg{width:19px;height:19px}}
 @media (max-width:760px){#pbar{top:calc(env(safe-area-inset-top,0px) + 62px)}#bossUI{top:calc(env(safe-area-inset-top,0px) + 62px);width:min(440px,52vw)}#coins{top:calc(env(safe-area-inset-top,0px) + 62px)}}
 #help{background:rgba(40,22,50,.4);z-index:8}
 #help .card{padding:22px 26px;width:min(520px,92vw);max-height:86vh;overflow:auto;display:flex;flex-direction:column;gap:10px;text-align:left}
@@ -119,6 +120,7 @@ body.touch #help .kb,body:not(.touch) #help .tc{display:none}
 <div id="bossUI"><div class="bn">炎翼恶龙</div><div class="bh"><b></b></div></div>
 <div id="banner"><b></b><small></small></div>
 <div id="bar">
+ <a id="hubBtn" href="https://hitanorain.github.io/" title="回到游戏厅" aria-label="回到游戏厅"><svg viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.8 9.6V20h4.4v-5.6h3.6V20h4.4V9.6"/></svg></a><span class="sep"></span>
  <button id="pauseBtn" title="暂停 (P)" aria-label="暂停"><svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg></button><span class="sep" id="pauseSep"></span>
  <button id="shotBtn" title="截图" aria-label="截图"><svg viewBox="0 0 24 24"><path d="M3.5 8.5h3.2l1.8-2.8h7l1.8 2.8h3.2v10.8h-17z"/><circle cx="12" cy="13.6" r="3.4"/></svg></button>
  <button id="musicBtn" title="音乐开关" aria-label="音乐开关"><svg viewBox="0 0 24 24"><path d="M9 17.5V5.2l10.5-2v12.3"/><circle cx="6.5" cy="17.6" r="2.6"/><circle cx="17" cy="15.6" r="2.6"/><path class="slash" d="M3 3l18 18"/></svg></button>
@@ -178,7 +180,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.4';
+const VERSION='0.4.1';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
