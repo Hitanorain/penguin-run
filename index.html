@@ -155,7 +155,7 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
 <div id="hint"></div><div id="toast"></div>
 <div id="settings" class="screen hide"><div class="card glass">
  <h2>设置</h2>
- <div class="opt"><span>难度</span><div class="seg" data-k="level"><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div></div>
+ <div class="opt"><span>难度</span><div class="seg" data-k="level"><button data-v="coin">吃金币</button><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div></div>
  <div class="opt styleRow"><span>超简单玩法</span><div class="seg" data-k="style"><button data-v="lr">只左右</button><button data-v="js">只跳滑</button></div></div>
  <div class="opt tc"><span>屏幕按键</span><div class="seg" data-k="pad"><button data-v="1">显示</button><button data-v="0">隐藏</button></div></div>
  <div class="opt"><span>树木数量</span><div class="seg" data-k="trees"><button data-v="0">少</button><button data-v="1">中</button><button data-v="2">多</button></div></div>
@@ -170,6 +170,7 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
  <p class="kb"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> / <b>W</b> / <b>空格</b> 跳跃　<b>↓</b> / <b>S</b> 肚皮滑行（空中按下会快速落地）　<b>P</b> 暂停</p>
  <p class="tc">左右滑动换道（滑一下换一条道，想再换就抬起手指再滑），上滑跳跃，下滑肚皮滑行。也可以按屏幕下方的按键：左下 <b>◀</b><b>▶</b> 换道，右下 <b>▲</b> 跳跃、<b>▼</b> 滑行；不需要时可在设置里隐藏。</p>
  <p><b>简单</b> 难度下企鹅跑得更慢，障碍也更少，适合小朋友；可以在标题页或设置里切换。</p>
+ <p><b>吃金币</b> 没有任何障碍、断桥和恶龙，永远不会摔倒，只管换道、跳跃去吃金币；想结束时按暂停，再点「回到标题」。</p>
  <p><b>超简单</b> 跑得最慢、没有恶龙，而且只用一种操作：<b>只左右</b> 时只出现冰块、雪人、木箱，换道躲开就行（点屏幕左半边/右半边也能换道）；<b>只跳滑</b> 时企鹅一直在中间跑道，只出现栅栏、断桥（要跳）和拱门（要滑），点一下屏幕就是跳。</p>
  <p>红白栅栏可以跳过；“冲鸭！”拱门要滑过去；冰块、雪人、木箱只能换道躲开。断桥要及时起跳，高台可以跑上坡道或直接跳上去，跳台会把你弹飞越过断桥。</p>
  <h3>道具</h3>
@@ -184,7 +185,7 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
 <div id="title" class="screen hide">
  <div class="top"><h1>企鹅跑酷</h1><div class="sub">向着夕阳奔跑</div></div>
  <div class="bot"><button id="startBtn" class="big">开始奔跑</button>
- <div class="seg diffSeg" data-k="level"><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div>
+ <div class="seg diffSeg" data-k="level"><button data-v="coin">吃金币</button><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div>
  <div class="seg diffSeg styleRow" data-k="style"><button data-v="lr">◀ ▶ 只左右</button><button data-v="js">▲ ▼ 只跳滑</button></div>
  <div id="best"></div>
  <div class="keys" id="keysTxt"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> 或 <b>空格</b> 跳跃　<b>↓</b> 或 <b>S</b> 肚皮滑行　<b>P</b> 暂停</div></div>
@@ -197,7 +198,7 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
  <div class="stat"><span>最佳纪录</span><b id="oBest">0 m</b></div>
  <div class="row"><button id="againBtn" class="big">再跑一次</button><button id="homeBtn">回到标题</button></div>
 </div></div>
-<div id="pause" class="screen hide"><h2>已暂停</h2><button id="resumeBtn" class="big">继续</button></div>
+<div id="pause" class="screen hide"><h2>已暂停</h2><button id="resumeBtn" class="big">继续</button><button id="pauseHome">回到标题</button></div>
 <div id="loading">正在准备夕阳…</div>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
@@ -210,7 +211,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.6';
+const VERSION='0.7';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -227,9 +228,10 @@ const QUALITY={
 let qKey=store.get('quality',TOUCH?'mid':'high');if(!QUALITY[qKey])qKey='high';
 // easy mode (default on tablets/phones): the run plays in 0.72x time and the speed ramp tops out lower — geometry stays valid since jumps slow down too
 // super-easy ('super') narrows the game to one kind of move: STYLE 'lr' = only change lanes, 'js' = only jump/slide; no dragon
-let LEVEL=store.get('level',store.get('easy',TOUCH)?'easy':'normal');if(!['super','easy','normal'].includes(LEVEL))LEVEL='easy';
+// 'coin' = coins only: no obstacles, gaps or dragon, and nothing can make you fall — a run never ends
+let LEVEL=store.get('level',store.get('easy',TOUCH)?'easy':'normal');if(!['coin','super','easy','normal'].includes(LEVEL))LEVEL='easy';
 let STYLE=store.get('style','lr');if(STYLE!=='js')STYLE='lr';
-let EASY=LEVEL!=='normal',SUPER=LEVEL==='super',PAD=store.get('pad',true);const EASY_TS=.72,SUPER_TS=.65;
+let EASY=LEVEL!=='normal',SUPER=LEVEL==='super',COIN=LEVEL==='coin',PAD=store.get('pad',true);const EASY_TS=.72,SUPER_TS=.65;
 let Q=QUALITY[qKey];
 const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Q.pr);renderer.setSize(innerWidth,innerHeight);
@@ -715,7 +717,7 @@ function updateItems(){for(let i=items.length-1;i>=0;i--){const it=items[i];cons
 let R=rng(Date.now()%1e9),nextS=60;
 const speedAt=d=>EASY?13+8*(1-Math.exp(-d/3000)):13+19*(1-Math.exp(-d/2200));
 const hardAt=d=>clamp(d/(SUPER?9000:EASY?6000:3000),0,1);   // 0→1 obstacle density ramp
-const bossNext=()=>SUPER?Infinity:BOSS.next;
+const bossNext=()=>SUPER||COIN?Infinity:BOSS.next;
 const TALL=['ice','snowman','crates'];
 const pickTall=()=>TALL[R()*TALL.length|0];
 function anyType(){const r=R();return r<.32?'fence':r<.52?'gate1':pickTall()}
@@ -741,7 +743,13 @@ function placeRowJS(s){const d=hardAt(dist),r=R();   // the penguin stays in the
   if(r<.22-.1*d){coinLine(1,s-4,8+(R()*5|0));return 0}
   if(r<.62){for(let l=0;l<3;l++)addObs('fence',l,s);coinArc(1,s);return 0}
   addObs('gate3',1,s);coinLine(1,s-4,6,.42);return 0}
-function placeRow(s){if(SUPER)return STYLE==='js'?placeRowJS(s):placeRowLR(s);const d=hardAt(dist),r=R();const lane=R()*3|0;
+function placeRowCoin(s){const r=R(),lane=R()*3|0;   // lines, arcs to jump for, zigzags across lanes
+  if(s>=nextItemS){addItem('fly',R()*3|0,s-9);nextItemS=s+350+R()*300}
+  if(r<.35){coinLine(lane,s-4,8+(R()*5|0));return 0}
+  if(r<.55){coinArc(lane,s);return 0}
+  if(r<.8){let l=lane,d=l===2?-1:1;for(let i=0;i<12;i++){if(i&&i%4===0){if(l+d<0||l+d>2)d=-d;l+=d}addCoin(LANES[l],.62,s-6+i*1.7)}return 0}
+  for(let l=0;l<3;l++)coinLine(l,s-4,5);return 0}
+function placeRow(s){if(COIN)return placeRowCoin(s);if(SUPER)return STYLE==='js'?placeRowJS(s):placeRowLR(s);const d=hardAt(dist),r=R();const lane=R()*3|0;
   if(s>=nextItemS&&s<BOSS.next-260){addItem(R()<.5?'boost':'fly',R()*3|0,s-9);nextItemS=s+350+R()*300}
   if(s>700&&R()<.06)return rowKicker(s);
   if(s>260&&R()<.09)return rowGap(s);
@@ -955,7 +963,8 @@ function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.
   Object.assign(PL,{lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0});PG.stars.visible=false;PG.root.visible=true;PG.root.rotation.set(0,0,0);PG.root.scale.setScalar(1);
   for(const d of dolphins){d.on=false;d.m.visible=false}updateHUD(true)}
 function startRun(){initAudio();resetRun();G.state='intro';G.introT=0;sfx('start');$('title').classList.add('hide');$('over').classList.add('hide');$('hud').classList.add('on');document.body.classList.add('running');
-  if(SUPER)hint(STYLE==='lr'?'左右换道，躲开冰块和雪人！':'栅栏和断桥要跳，拱门要滑！',3.5);
+  if(COIN)hint('随便跑，把金币都吃掉吧！',3.5);
+  else if(SUPER)hint(STYLE==='lr'?'左右换道，躲开冰块和雪人！':'栅栏和断桥要跳，拱门要滑！',3.5);
   else if(!store.get('tutored',false)){hint(TOUCH?'左右滑动换道 · 上滑跳跃 · 下滑滑行':'← → 换道　↑ 跳跃　↓ 滑行',3.5);store.set('tutored',true)}}
 function crash(cause){G.state='dead';G.deadT=0;G.cause=cause;PL.boost=0;
   if(cause==='water'){sfx('splash');emit(puffs,PL.x,SEA_Y+.1,0,46,3,5,1,3.2);G.shake=.3;G.speed*=.15}
@@ -964,7 +973,7 @@ function crash(cause){G.state='dead';G.deadT=0;G.cause=cause;PL.boost=0;
   const d=Math.floor(dist),rec=d>G.best.d;if(rec)G.best={d,c:G.coins};store.set('best',G.best);
   $('overTitle').textContent=cause==='water'?'扑通！掉进海里了':cause==='boss'?'被恶龙打败了':'摔倒啦';
   $('oDist').textContent=d+' m';$('oCoins').textContent=G.coins;$('oBest').textContent=G.best.d+' m';$('newRec').style.display=rec&&d>50?'block':'none'}
-function toTitle(){G.state='title';resetRun();$('over').classList.add('hide');$('hud').classList.remove('on');$('title').classList.remove('hide');document.body.classList.remove('running');showBest()}
+function toTitle(){G.state='title';resetRun();$('over').classList.add('hide');$('pause').classList.add('hide');$('hud').classList.remove('on');$('title').classList.remove('hide');document.body.classList.remove('running');showBest()}
 function showBest(){$('best').textContent=G.best.d?`最佳纪录 ${G.best.d} m · 金币 ${G.best.c}`:''}
 function setPause(p,silent){if(p&&G.state!=='run')return;if(!p&&G.state!=='paused')return;G.state=p?'paused':'run';G.pausedBySet=!!(p&&silent);$('pause').classList.toggle('hide',!p||!!silent);for(const k in KEY)KEY[k]=false;mouseFire=false}
 let hintT=0;function hint(s,t){$('hint').textContent=s;$('hint').classList.add('on');hintT=t}
@@ -996,12 +1005,12 @@ cv.addEventListener('touchmove',e=>{if(!tch)return;const t=e.changedTouches[0],d
 document.querySelectorAll('#pad button').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();act(b.dataset.a);b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit')});
   b.addEventListener('contextmenu',e=>e.preventDefault())});
 function applyPad(){document.body.classList.toggle('pad',TOUCH&&PAD)}applyPad();
-function setLevel(l){LEVEL=l;EASY=l!=='normal';SUPER=l==='super';store.set('level',l);applyMode()}
+function setLevel(l){LEVEL=l;EASY=l!=='normal';SUPER=l==='super';COIN=l==='coin';store.set('level',l);applyMode()}
 function applyMode(){const b=document.body.classList;b.toggle('super',SUPER);b.toggle('only-lr',SUPER&&STYLE==='lr');b.toggle('only-js',SUPER&&STYLE==='js');
-  $('keysTxt').innerHTML=SUPER?(STYLE==='lr'?'超简单 · 只要左右换道，躲开冰块、雪人和木箱':'超简单 · 只要跳过栅栏和断桥、滑过拱门')+(TOUCH?'<br>点屏幕'+(STYLE==='lr'?'左边 / 右边换道':'任意位置跳跃'):''):TOUCH?KEYS_TOUCH:KEYS_KB}
+  $('keysTxt').innerHTML=COIN?'吃金币 · 没有障碍也没有断桥，随便跑，永远不会摔倒'+(TOUCH?'<br>滑动或按屏幕按键换道、跳跃':''):SUPER?(STYLE==='lr'?'超简单 · 只要左右换道，躲开冰块、雪人和木箱':'超简单 · 只要跳过栅栏和断桥、滑过拱门')+(TOUCH?'<br>点屏幕'+(STYLE==='lr'?'左边 / 右边换道':'任意位置跳跃'):''):TOUCH?KEYS_TOUCH:KEYS_KB}
 cv.addEventListener('touchend',e=>{if(tch&&!tch.used){if(G.state==='title')startRun();   // super-easy taps: left/right half of the screen, or tap anywhere to jump
     else if(SUPER)act(STYLE==='js'?'jump':tch.x<innerWidth/2?'left':'right')}tch=null});
-$('startBtn').onclick=startRun;$('againBtn').onclick=startRun;$('homeBtn').onclick=toTitle;$('resumeBtn').onclick=()=>setPause(false);
+$('startBtn').onclick=startRun;$('againBtn').onclick=startRun;$('homeBtn').onclick=toTitle;$('resumeBtn').onclick=()=>setPause(false);$('pauseHome').onclick=toTitle;
 $('pauseBtn').onclick=()=>{if(G.state==='run')setPause(true);else if(G.state==='paused')setPause(false)};
 addEventListener('blur',()=>setPause(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true)});
 const KEYS_KB=$('keysTxt').innerHTML,KEYS_TOUCH='左右滑动 换道　上滑 跳跃　下滑 肚皮滑行<br>也可以按屏幕下方的按键';applyMode();
@@ -1061,7 +1070,7 @@ function updateVertical(dt){const gr=groundAt(PL.x,dist);
     PL.onKick=gr.kick}
   if(PL.air){PL.vy-=GRAV*dt;PL.y+=PL.vy*dt;
     if(!gr.hole&&PL.y<=gr.h&&PL.vy<=0){PL.y=gr.h;PL.air=false;PL.vy=0;sfx('land');emit(puffs,PL.x,PL.y+.05,.1,10,2,1,.5,1.6);if(PL.queueSlide){PL.queueSlide=false;PL.slideT=SLIDE_TIME;sfx('slide')}}
-    else if(gr.hole&&PL.y<SEA_Y+.55&&G.state==='run'){if(PL.invT>0)PL.vy=12;else crash('water')}}}
+    else if(gr.hole&&PL.y<SEA_Y+.55&&G.state==='run'){if(PL.invT>0||COIN)PL.vy=12;else crash('water')}}}
 // golden flight only ends once the next stretch of track is safe to land on
 function landingClear(){const reach=G.speed*.6+4;for(const h of holes)if(h.s1>dist-1&&h.s0<dist+reach)return false;
   for(const o of obstacles){if(!o.box)continue;const ds=o.s+(o.box.oz||0)-dist;if(ds>-2-o.box.d/2&&ds<reach+o.box.d/2&&Math.abs(o.x-LANES[PL.lane])<o.box.w/2+.5)return false}return true}
@@ -1103,7 +1112,7 @@ function updatePlayer(dt){const t=G.t,B=PG.body,bossFly=bossFlying()||(G.cause==
   if(G.state==='title')PG.root.rotation.y=damp(PG.root.rotation.y,Math.sin(t*.4)*.25,3,dt);
   else if(G.state==='intro')PG.root.rotation.y=lerp(0,Math.PI,smooth(0,1,G.introT/1.1));
   else PG.root.rotation.y=Math.PI+PL.lean*-.5}
-function collide(){const ph=PL.slideT>0?.5:1.05,hw=.3,safe=PL.fly>0||PL.invT>0;
+function collide(){const ph=PL.slideT>0?.5:1.05,hw=.3,safe=PL.fly>0||PL.invT>0||COIN;   // coin mode: obstacles left over from switching mid-run can't hurt
   if(!safe)for(const o of obstacles){if(!o.box)continue;const z=dist-o.s-(o.box.oz||0);if(Math.abs(z)>o.box.d/2+.35)continue;if(Math.abs(PL.x-o.x)>o.box.w/2+hw)continue;
     if(PL.y+ph>o.box.y0+.04&&PL.y<o.box.y1){crash('hit');return}}
   for(const c of coins){if(c.got)continue;const z=dist-c.s;
@@ -1163,7 +1172,7 @@ function updateWorld(dt,scroll){
   for(const b of birds){const u=b.userData;u.x+=u.v*dt;if(u.x>140)u.x=-140;const fl=Math.sin(G.t*4+u.ph)*.6;b.children[0].rotation.z=fl;b.children[1].rotation.z=-fl;b.position.set(u.x,u.y+Math.sin(G.t*.5+u.ph)*2,u.z);b.rotation.y=Math.PI/2}
   updateBurst(sparks,dt,scroll);updateBurst(puffs,dt,scroll);
   if(hintT>0){hintT-=dt;if(hintT<=0)$('hint').classList.remove('on')}}
-const timeScale=()=>G.state==='title'?1:SUPER?SUPER_TS:EASY?EASY_TS:1;let bossCls=false;
+const timeScale=()=>G.state==='title'?1:SUPER||COIN?SUPER_TS:EASY?EASY_TS:1;let bossCls=false;
 function step(dt){G.t+=dt;let scroll=0;
   if(G.state==='intro'){G.introT+=dt;G.speed=lerp(0,speedAt(0),smooth(.3,1.1,G.introT));if(G.introT>=1.1)G.state='run'}
   else if(G.state==='run'){const target=BOSS.phase!=='none'?13:speedAt(dist)*(PL.boost>0?1.5:1);G.speed=damp(G.speed,target,PL.boost>0?3:2,dt)}
