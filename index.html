@@ -51,7 +51,21 @@ button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 #help h3{margin:8px 0 2px;font-size:14px;color:var(--acc);letter-spacing:.12em}
 #help p{margin:0;font-size:13px;line-height:1.85;color:#f2e6dc}#help p b{color:#fff;font-weight:500;padding:0 5px;border:1px solid var(--line);border-radius:5px;background:rgba(255,236,214,.08);margin:0 1px}
 #help .big{align-self:center;margin-top:8px}
-body.touch #help .kb,body:not(.touch) #help .tc{display:none}
+body.touch #help .kb,body:not(.touch) #help .tc,body:not(.touch) #settings .tc{display:none}
+/* on-screen buttons (touch only, while running, not in the dragon fight) */
+#pad{display:none;position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);padding:0 calc(env(safe-area-inset-right,0px) + 22px) 0 calc(env(safe-area-inset-left,0px) + 22px);justify-content:space-between;align-items:flex-end;pointer-events:none;touch-action:none}
+body.pad.running:not(.boss) #pad{display:flex}
+#pad .pl,#pad .pr{display:flex;gap:16px;align-items:flex-end}
+#pad button{pointer-events:auto;touch-action:none;width:84px;height:84px;padding:0;border-radius:50%;display:grid;place-items:center;align-content:center;gap:0;letter-spacing:0;
+ background:rgba(52,30,52,.38);border:1.5px solid rgba(255,226,200,.35);box-shadow:0 6px 20px rgba(30,10,30,.25)}
+#pad button:hover{background:rgba(52,30,52,.38)}
+#pad .jp{width:100px;height:100px;background:rgba(255,168,104,.32)}#pad .jp:hover{background:rgba(255,168,104,.32)}
+#pad svg{width:38px;height:38px;fill:none;stroke:var(--fg);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#pad span{font-size:13px;line-height:1;margin-top:-4px;color:var(--dim);pointer-events:none}
+#pad button.hit{animation:hit .22s}@keyframes hit{0%{transform:scale(.86);background:rgba(255,200,150,.5)}100%{transform:scale(1)}}
+@media (max-width:760px),(max-height:520px){#pad button{width:66px;height:66px}#pad .jp{width:78px;height:78px}#pad svg{width:30px;height:30px}#pad .pl,#pad .pr{gap:10px}}
+body.pad.running #hint{bottom:calc(env(safe-area-inset-bottom,0px) + 140px)}
+#diffSeg button{padding:7px 18px}
 /* power-up timer, boss bar, hearts, banner */
 #pbar{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 16px);transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:7px 14px;opacity:0;transition:opacity .3s}
 #pbar.on{opacity:1}#pbar span{font-size:13px;letter-spacing:.12em;white-space:nowrap}#pbar .trk{width:120px;height:7px;border-radius:5px;background:rgba(255,255,255,.18);overflow:hidden}
@@ -129,9 +143,15 @@ body.touch #help .kb,body:not(.touch) #help .tc{display:none}
  <button id="setBtn" title="参数面板" aria-label="参数面板"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.9 1.9M17.5 17.5l1.9 1.9M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.9-1.9M17.5 6.5l1.9-1.9"/><circle cx="12" cy="12" r="7"/></svg></button>
  <button id="helpBtn" title="操作说明" aria-label="操作说明"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.8 2.5c-.8.4-1.2 1-1.2 1.9"/><path d="M12 17.2v.1"/></svg></button>
 </div>
+<div id="pad">
+ <div class="pl"><button data-a="left" aria-label="向左"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><button data-a="right" aria-label="向右"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button></div>
+ <div class="pr"><button data-a="slide" aria-label="滑行"><svg viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg><span>滑</span></button><button data-a="jump" class="jp" aria-label="跳跃"><svg viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg><span>跳</span></button></div>
+</div>
 <div id="hint"></div><div id="toast"></div>
 <div id="settings" class="screen hide"><div class="card glass">
  <h2>设置</h2>
+ <div class="opt"><span>难度</span><div class="seg" data-k="easy"><button data-v="1">简单</button><button data-v="0">普通</button></div></div>
+ <div class="opt tc"><span>屏幕按键</span><div class="seg" data-k="pad"><button data-v="1">显示</button><button data-v="0">隐藏</button></div></div>
  <div class="opt"><span>树木数量</span><div class="seg" data-k="trees"><button data-v="0">少</button><button data-v="1">中</button><button data-v="2">多</button></div></div>
  <div class="opt"><span>画质</span><div class="seg" data-k="quality"><button data-v="low">流畅</button><button data-v="mid">均衡</button><button data-v="high">精美</button></div></div>
  <div class="opt"><span>音乐</span><div class="seg" data-k="music"><button data-v="1">开</button><button data-v="0">关</button></div></div>
@@ -142,7 +162,8 @@ body.touch #help .kb,body:not(.touch) #help .tc{display:none}
  <h2>操作说明</h2>
  <h3>跑酷</h3>
  <p class="kb"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> / <b>W</b> / <b>空格</b> 跳跃　<b>↓</b> / <b>S</b> 肚皮滑行（空中按下会快速落地）　<b>P</b> 暂停</p>
- <p class="tc">左右滑动换道，上滑跳跃，下滑肚皮滑行。</p>
+ <p class="tc">左右滑动换道（滑一下换一条道，想再换就抬起手指再滑），上滑跳跃，下滑肚皮滑行。也可以按屏幕下方的按键：左下 <b>◀</b><b>▶</b> 换道，右下 <b>▲</b> 跳跃、<b>▼</b> 滑行；不需要时可在设置里隐藏。</p>
+ <p><b>简单</b> 难度下企鹅跑得更慢，障碍也更少，适合小朋友；可以在标题页或设置里切换。</p>
  <p>红白栅栏可以跳过；“冲鸭！”拱门要滑过去；冰块、雪人、木箱只能换道躲开。断桥要及时起跳，高台可以跑上坡道或直接跳上去，跳台会把你弹飞越过断桥。</p>
  <h3>道具</h3>
  <p>⚡ <b>蓝色闪电</b> 加速冲刺 5 秒，速度提升到 1.5 倍（不无敌，小心障碍）。<br>✦ <b>金色翅膀</b> 无敌飞行 8 秒，全身金光，不会撞到障碍也不会落海，还会吸走附近三条道的金币。</p>
@@ -156,6 +177,7 @@ body.touch #help .kb,body:not(.touch) #help .tc{display:none}
 <div id="title" class="screen hide">
  <div class="top"><h1>企鹅跑酷</h1><div class="sub">向着夕阳奔跑</div></div>
  <div class="bot"><button id="startBtn" class="big">开始奔跑</button>
+ <div class="seg" id="diffSeg" data-k="easy"><button data-v="1">简单</button><button data-v="0">普通</button></div>
  <div id="best"></div>
  <div class="keys" id="keysTxt"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> 或 <b>空格</b> 跳跃　<b>↓</b> 或 <b>S</b> 肚皮滑行　<b>P</b> 暂停</div></div>
 </div>
@@ -180,7 +202,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.4.1';
+const VERSION='0.5';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -195,6 +217,8 @@ const QUALITY={
   mid:{n:'均衡',pr:Math.min(DPR,1.4),shadow:2048,soft:false,bloom:true,msaa:0,snow:480,decor:.8},
   high:{n:'精美',pr:Math.min(DPR,1.9),shadow:2048,soft:true,bloom:true,msaa:4,snow:800,decor:1}};
 let qKey=store.get('quality',TOUCH?'mid':'high');if(!QUALITY[qKey])qKey='high';
+// easy mode (default on tablets/phones): the run plays in 0.72x time and the speed ramp tops out lower — geometry stays valid since jumps slow down too
+let EASY=store.get('easy',TOUCH),PAD=store.get('pad',true);const EASY_TS=.72;
 let Q=QUALITY[qKey];
 const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Q.pr);renderer.setSize(innerWidth,innerHeight);
@@ -678,7 +702,8 @@ function updateItems(){for(let i=items.length-1;i>=0;i--){const it=items[i];cons
   it.g.position.set(it.x,it.y+Math.sin(G.t*2.6+it.s)*.15,z);it.g.rotation.y=G.t*2.2}}
 /* ---------- run generator: rows of hazards that always leave a way through ---------- */
 let R=rng(Date.now()%1e9),nextS=60;
-const speedAt=d=>13+19*(1-Math.exp(-d/2200));
+const speedAt=d=>EASY?13+8*(1-Math.exp(-d/3000)):13+19*(1-Math.exp(-d/2200));
+const hardAt=d=>clamp(d/(EASY?6000:3000),0,1);   // 0→1 obstacle density ramp
 const TALL=['ice','snowman','crates'];
 const pickTall=()=>TALL[R()*TALL.length|0];
 function anyType(){const r=R();return r<.32?'fence':r<.52?'gate1':pickTall()}
@@ -690,7 +715,7 @@ function rowPlat(s){const n=R()<.6?1:2,first=R()*3|0,lanes=n===1?[first]:[first,
 function rowKicker(s){const v=speedAt(s),Lg=clamp(v*.55,9,18);kickers.push({s0:s,s1:s+RAMP_L,h:1});holes.push({s0:s+RAMP_L,s1:s+RAMP_L+Lg});
   addObs('kicker',1,s+RAMP_L/2);addObs('edgeB',1,s+RAMP_L+Lg);addObs('signJump',1,s-30,3.3);
   for(let i=0;i<10;i++){const t=i/9*.78;addCoin(LANES[1],1.5+12*t-15*t*t,s+RAMP_L+v*t)}return RAMP_L+Lg}
-function placeRow(s){const d=clamp(dist/3000,0,1),r=R();const lane=R()*3|0;
+function placeRow(s){const d=hardAt(dist),r=R();const lane=R()*3|0;
   if(s>=nextItemS&&s<BOSS.next-260){addItem(R()<.5?'boost':'fly',R()*3|0,s-9);nextItemS=s+350+R()*300}
   if(s>700&&R()<.06)return rowKicker(s);
   if(s>260&&R()<.09)return rowGap(s);
@@ -701,7 +726,7 @@ function placeRow(s){const d=clamp(dist/3000,0,1),r=R();const lane=R()*3|0;
   if(r<.9){for(let l=0;l<3;l++)addObs('fence',l,s);coinArc(R()*3|0,s);return 0}
   addObs('gate3',1,s);coinLine(lane,s-4,6,.42);return 0}
 // the stretch before a dragon stays clear
-function spawnAhead(){while(nextS<dist+175&&nextS<BOSS.next-150){const ext=placeRow(nextS);const v=speedAt(nextS);nextS+=ext+v*.6+7.5+R()*(16*(1-clamp(dist/3000,0,1))+7)}}
+function spawnAhead(){while(nextS<dist+175&&nextS<BOSS.next-150){const ext=placeRow(nextS);const v=speedAt(nextS);nextS+=ext+v*.6+7.5+R()*(16*(1-hardAt(dist))+7)}}
 
 /* ======================= particles ======================= */
 const snowN=Q.snow,snowPos=new Float32Array(snowN*3),snowSz=new Float32Array(snowN);for(let i=0;i<snowN;i++){snowPos[i*3]=(Math.random()-.5)*44;snowPos[i*3+1]=Math.random()*16;snowPos[i*3+2]=-Math.random()*70+12;snowSz[i]=.5+Math.random()}
@@ -938,19 +963,25 @@ cv.addEventListener('touchstart',e=>{const t=e.changedTouches[0];tch={x:t.client
 cv.addEventListener('touchmove',e=>{if(!tch)return;const t=e.changedTouches[0],dx=t.clientX-tch.x,dy=t.clientY-tch.y;
   if(BOSS.phase==='fight'){const vh=2*camera.position.distanceTo(camLook)*Math.tan(camera.fov*Math.PI/360),k=vh/innerHeight*1.15;   // drag = move the penguin 1:1 with the finger
     BOSS.tdz=(BOSS.tdz||0)-dx*k;BOSS.tdy=(BOSS.tdy||0)-dy*k;tch.x=t.clientX;tch.y=t.clientY;tch.used=true}
-  else if(Math.hypot(dx,dy)>26){act(Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'jump':'slide'));tch.x=t.clientX;tch.y=t.clientY;tch.used=true}e.preventDefault()},{passive:false});
+  else if(!tch.used&&Math.hypot(dx,dy)>30){act(Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'jump':'slide'));tch.used=true}e.preventDefault()},{passive:false});   // one swipe = one move; lift the finger to move again
+// on-screen buttons (touch devices): fire on pointerdown so there's no tap delay
+document.querySelectorAll('#pad button').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();act(b.dataset.a);b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit')});
+  b.addEventListener('contextmenu',e=>e.preventDefault())});
+function applyPad(){document.body.classList.toggle('pad',TOUCH&&PAD)}applyPad();
 cv.addEventListener('touchend',e=>{if(tch&&!tch.used&&G.state==='title')startRun();tch=null});
 $('startBtn').onclick=startRun;$('againBtn').onclick=startRun;$('homeBtn').onclick=toTitle;$('resumeBtn').onclick=()=>setPause(false);
 $('pauseBtn').onclick=()=>{if(G.state==='run')setPause(true);else if(G.state==='paused')setPause(false)};
 addEventListener('blur',()=>setPause(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true)});
-if(TOUCH)$('keysTxt').innerHTML='左右滑动 换道　上滑 跳跃　下滑 肚皮滑行';
-/* ---------- settings panel: trees, quality, music, sfx, screenshot, share ---------- */
-function syncSeg(){const v={trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0'};
-  document.querySelectorAll('#settings .seg').forEach(s=>s.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v[s.dataset.k])))}
+if(TOUCH)$('keysTxt').innerHTML='左右滑动 换道　上滑 跳跃　下滑 肚皮滑行<br>也可以按屏幕下方的按键';
+/* ---------- settings panel: difficulty, buttons, trees, quality, music, sfx, screenshot, share ---------- */
+function syncSeg(){const v={easy:EASY?'1':'0',pad:PAD?'1':'0',trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0'};
+  document.querySelectorAll('.seg[data-k]').forEach(s=>s.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v[s.dataset.k])))}
 function applyQuality(k){if(!QUALITY[k])return;qKey=k;Q=QUALITY[k];store.set('quality',k);prNow=Q.pr;prCeil=Infinity;renderer.setPixelRatio(Q.pr);renderer.setSize(innerWidth,innerHeight);
   sun.shadow.mapSize.set(Q.shadow,Q.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}buildComposer()}
-document.querySelectorAll('#settings .seg').forEach(s=>s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=s.dataset.k,v=b.dataset.v;initAudio();
-  if(k==='trees'){treeLv=+v;store.set('trees',treeLv);applyTrees()}else if(k==='quality')applyQuality(v);else setAudio(k,v==='1');syncSeg();syncMusicBtn()}));
+document.querySelectorAll('.seg[data-k]').forEach(s=>s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=s.dataset.k,v=b.dataset.v;initAudio();
+  if(k==='easy'){EASY=v==='1';store.set('easy',EASY)}else if(k==='pad'){PAD=v==='1';store.set('pad',PAD);applyPad()}
+  else if(k==='trees'){treeLv=+v;store.set('trees',treeLv);applyTrees()}else if(k==='quality')applyQuality(v);else setAudio(k,v==='1');syncSeg();syncMusicBtn()}));
+syncSeg();
 // panels (参数面板 / 操作说明) pause a running game while open
 const PANELS=['settings','help'];
 const panelOpen=()=>PANELS.some(id=>!$(id).classList.contains('hide'));
@@ -1100,6 +1131,7 @@ function updateWorld(dt,scroll){
   for(const b of birds){const u=b.userData;u.x+=u.v*dt;if(u.x>140)u.x=-140;const fl=Math.sin(G.t*4+u.ph)*.6;b.children[0].rotation.z=fl;b.children[1].rotation.z=-fl;b.position.set(u.x,u.y+Math.sin(G.t*.5+u.ph)*2,u.z);b.rotation.y=Math.PI/2}
   updateBurst(sparks,dt,scroll);updateBurst(puffs,dt,scroll);
   if(hintT>0){hintT-=dt;if(hintT<=0)$('hint').classList.remove('on')}}
+const timeScale=()=>EASY&&G.state!=='title'?EASY_TS:1;let bossCls=false;
 function step(dt){G.t+=dt;let scroll=0;
   if(G.state==='intro'){G.introT+=dt;G.speed=lerp(0,speedAt(0),smooth(.3,1.1,G.introT));if(G.introT>=1.1)G.state='run'}
   else if(G.state==='run'){const target=BOSS.phase!=='none'?13:speedAt(dist)*(PL.boost>0?1.5:1);G.speed=damp(G.speed,target,PL.boost>0?3:2,dt)}
@@ -1110,7 +1142,8 @@ function step(dt){G.t+=dt;let scroll=0;
     updateObstacles();updateCoins();updateWorld(dt,scroll);updateCamera(dt);updateAtmosphere(dt);
     for(const r of ribbons)updateRibbon(r,Math.min(dt,1/30),G.state==='title'?1.6:G.speed*.9+2,G.t);
     if(G.state==='run'||G.state==='intro')updateHUD()}
-  $('speed').textContent=G.state==='run'&&BOSS.phase==='none'?`${(G.speed*3.6).toFixed(0)} km/h`:'';musicTick();
+  $('speed').textContent=G.state==='run'&&BOSS.phase==='none'?`${(G.speed*timeScale()*3.6).toFixed(0)} km/h`:'';musicTick();
+  const bossOn=BOSS.phase!=='none'&&BOSS.phase!=='warn';if(bossOn!==bossCls){bossCls=bossOn;document.body.classList.toggle('boss',bossOn)}
   sky.position.copy(camera.position);gradePass.uniforms.uTime.value=G.t}
 
 /* ======================= adaptive resolution ======================= */
@@ -1128,7 +1161,7 @@ const showFps=/[?&]fps=1/.test(location.search);if(showFps)$('fps').style.displa
 prep(scene);applyTrees();
 let last=performance.now();
 function frame(now){requestAnimationFrame(frame);const real=Math.min(.25,(now-last)/1000);last=now;const dt=Math.min(real,1/20);
-  step(dt);composer.render();
+  step(dt*timeScale());composer.render();
   fpsAcc+=real;fpsN++;if(fpsAcc>=1){const f=fpsN/fpsAcc;adapt(f);if(showFps)$('fps').textContent=`${f.toFixed(0)} fps · ${Q.n} · ${prNow.toFixed(2)}x · v${VERSION}`;fpsAcc=fpsN=0}}
 updateAtmosphere(0);bakeEnv(elevAt(0));updateWorld(0,0);updateCamera(1);showBest();
 requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);$('loading').classList.add('hide');$('title').classList.remove('hide')});
