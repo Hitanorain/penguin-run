@@ -65,7 +65,12 @@ body.pad.running:not(.boss) #pad{display:flex}
 #pad button.hit{animation:hit .22s}@keyframes hit{0%{transform:scale(.86);background:rgba(255,200,150,.5)}100%{transform:scale(1)}}
 @media (max-width:760px),(max-height:520px){#pad button{width:66px;height:66px}#pad .jp{width:78px;height:78px}#pad svg{width:30px;height:30px}#pad .pl,#pad .pr{gap:10px}}
 body.pad.running #hint{bottom:calc(env(safe-area-inset-bottom,0px) + 140px)}
-#diffSeg button{padding:7px 18px;backdrop-filter:none;-webkit-backdrop-filter:none}#diffSeg button:not(.on){background:rgba(52,30,52,.4)}
+.diffSeg button{padding:7px 18px;backdrop-filter:none;-webkit-backdrop-filter:none}.diffSeg button:not(.on){background:rgba(52,30,52,.4)}
+body:not(.super) .styleRow{display:none!important}
+/* super-easy: only the two buttons that style uses, pushed to the two screen edges and enlarged */
+body.only-lr #pad .pr,body.only-js #pad .pl{display:none}
+body.only-lr #pad .pl,body.only-js #pad .pr{flex:1;justify-content:space-between}
+body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.only-lr #pad svg,body.only-js #pad svg{width:46px;height:46px}
 /* power-up timer, boss bar, hearts, banner */
 #pbar{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 16px);transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:7px 14px;opacity:0;transition:opacity .3s}
 #pbar.on{opacity:1}#pbar span{font-size:13px;letter-spacing:.12em;white-space:nowrap}#pbar .trk{width:120px;height:7px;border-radius:5px;background:rgba(255,255,255,.18);overflow:hidden}
@@ -150,7 +155,8 @@ body.pad.running #hint{bottom:calc(env(safe-area-inset-bottom,0px) + 140px)}
 <div id="hint"></div><div id="toast"></div>
 <div id="settings" class="screen hide"><div class="card glass">
  <h2>设置</h2>
- <div class="opt"><span>难度</span><div class="seg" data-k="easy"><button data-v="1">简单</button><button data-v="0">普通</button></div></div>
+ <div class="opt"><span>难度</span><div class="seg" data-k="level"><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div></div>
+ <div class="opt styleRow"><span>超简单玩法</span><div class="seg" data-k="style"><button data-v="lr">只左右</button><button data-v="js">只跳滑</button></div></div>
  <div class="opt tc"><span>屏幕按键</span><div class="seg" data-k="pad"><button data-v="1">显示</button><button data-v="0">隐藏</button></div></div>
  <div class="opt"><span>树木数量</span><div class="seg" data-k="trees"><button data-v="0">少</button><button data-v="1">中</button><button data-v="2">多</button></div></div>
  <div class="opt"><span>画质</span><div class="seg" data-k="quality"><button data-v="low">流畅</button><button data-v="mid">均衡</button><button data-v="high">精美</button></div></div>
@@ -164,6 +170,7 @@ body.pad.running #hint{bottom:calc(env(safe-area-inset-bottom,0px) + 140px)}
  <p class="kb"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> / <b>W</b> / <b>空格</b> 跳跃　<b>↓</b> / <b>S</b> 肚皮滑行（空中按下会快速落地）　<b>P</b> 暂停</p>
  <p class="tc">左右滑动换道（滑一下换一条道，想再换就抬起手指再滑），上滑跳跃，下滑肚皮滑行。也可以按屏幕下方的按键：左下 <b>◀</b><b>▶</b> 换道，右下 <b>▲</b> 跳跃、<b>▼</b> 滑行；不需要时可在设置里隐藏。</p>
  <p><b>简单</b> 难度下企鹅跑得更慢，障碍也更少，适合小朋友；可以在标题页或设置里切换。</p>
+ <p><b>超简单</b> 跑得最慢、没有恶龙，而且只用一种操作：<b>只左右</b> 时只出现冰块、雪人、木箱，换道躲开就行（点屏幕左半边/右半边也能换道）；<b>只跳滑</b> 时企鹅一直在中间跑道，只出现栅栏、断桥（要跳）和拱门（要滑），点一下屏幕就是跳。</p>
  <p>红白栅栏可以跳过；“冲鸭！”拱门要滑过去；冰块、雪人、木箱只能换道躲开。断桥要及时起跳，高台可以跑上坡道或直接跳上去，跳台会把你弹飞越过断桥。</p>
  <h3>道具</h3>
  <p>⚡ <b>蓝色闪电</b> 加速冲刺 5 秒，速度提升到 1.5 倍（不无敌，小心障碍）。<br>✦ <b>金色翅膀</b> 无敌飞行 8 秒，全身金光，不会撞到障碍也不会落海，还会吸走附近三条道的金币。</p>
@@ -177,7 +184,8 @@ body.pad.running #hint{bottom:calc(env(safe-area-inset-bottom,0px) + 140px)}
 <div id="title" class="screen hide">
  <div class="top"><h1>企鹅跑酷</h1><div class="sub">向着夕阳奔跑</div></div>
  <div class="bot"><button id="startBtn" class="big">开始奔跑</button>
- <div class="seg" id="diffSeg" data-k="easy"><button data-v="1">简单</button><button data-v="0">普通</button></div>
+ <div class="seg diffSeg" data-k="level"><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div>
+ <div class="seg diffSeg styleRow" data-k="style"><button data-v="lr">◀ ▶ 只左右</button><button data-v="js">▲ ▼ 只跳滑</button></div>
  <div id="best"></div>
  <div class="keys" id="keysTxt"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> 或 <b>空格</b> 跳跃　<b>↓</b> 或 <b>S</b> 肚皮滑行　<b>P</b> 暂停</div></div>
 </div>
@@ -202,7 +210,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.5.1';
+const VERSION='0.6';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -218,7 +226,10 @@ const QUALITY={
   high:{n:'精美',pr:Math.min(DPR,1.9),shadow:2048,soft:true,bloom:true,msaa:4,snow:800,decor:1}};
 let qKey=store.get('quality',TOUCH?'mid':'high');if(!QUALITY[qKey])qKey='high';
 // easy mode (default on tablets/phones): the run plays in 0.72x time and the speed ramp tops out lower — geometry stays valid since jumps slow down too
-let EASY=store.get('easy',TOUCH),PAD=store.get('pad',true);const EASY_TS=.72;
+// super-easy ('super') narrows the game to one kind of move: STYLE 'lr' = only change lanes, 'js' = only jump/slide; no dragon
+let LEVEL=store.get('level',store.get('easy',TOUCH)?'easy':'normal');if(!['super','easy','normal'].includes(LEVEL))LEVEL='easy';
+let STYLE=store.get('style','lr');if(STYLE!=='js')STYLE='lr';
+let EASY=LEVEL!=='normal',SUPER=LEVEL==='super',PAD=store.get('pad',true);const EASY_TS=.72,SUPER_TS=.65;
 let Q=QUALITY[qKey];
 const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(Q.pr);renderer.setSize(innerWidth,innerHeight);
@@ -703,7 +714,8 @@ function updateItems(){for(let i=items.length-1;i>=0;i--){const it=items[i];cons
 /* ---------- run generator: rows of hazards that always leave a way through ---------- */
 let R=rng(Date.now()%1e9),nextS=60;
 const speedAt=d=>EASY?13+8*(1-Math.exp(-d/3000)):13+19*(1-Math.exp(-d/2200));
-const hardAt=d=>clamp(d/(EASY?6000:3000),0,1);   // 0→1 obstacle density ramp
+const hardAt=d=>clamp(d/(SUPER?9000:EASY?6000:3000),0,1);   // 0→1 obstacle density ramp
+const bossNext=()=>SUPER?Infinity:BOSS.next;
 const TALL=['ice','snowman','crates'];
 const pickTall=()=>TALL[R()*TALL.length|0];
 function anyType(){const r=R();return r<.32?'fence':r<.52?'gate1':pickTall()}
@@ -715,7 +727,21 @@ function rowPlat(s){const n=R()<.6?1:2,first=R()*3|0,lanes=n===1?[first]:[first,
 function rowKicker(s){const v=speedAt(s),Lg=clamp(v*.55,9,18);kickers.push({s0:s,s1:s+RAMP_L,h:1});holes.push({s0:s+RAMP_L,s1:s+RAMP_L+Lg});
   addObs('kicker',1,s+RAMP_L/2);addObs('edgeB',1,s+RAMP_L+Lg);addObs('signJump',1,s-30,3.3);
   for(let i=0;i<10;i++){const t=i/9*.78;addCoin(LANES[1],1.5+12*t-15*t*t,s+RAMP_L+v*t)}return RAMP_L+Lg}
-function placeRow(s){const d=hardAt(dist),r=R();const lane=R()*3|0;
+// super-easy rows: only obstacles the allowed moves can clear; golden wings are the only item
+function placeRowLR(s){const d=hardAt(dist),r=R(),lane=R()*3|0;
+  if(s>=nextItemS){addItem('fly',R()*3|0,s-9);nextItemS=s+350+R()*300}
+  if(s>700&&R()<.05)return rowKicker(s);   // the kicker launches you by itself
+  if(r<.25-.1*d){coinLine(lane,s-4,8+(R()*5|0));return 0}
+  if(r<.75-.2*d){addObs(pickTall(),lane,s);coinLine((lane+1+(R()*2|0))%3,s-5,6);return 0}
+  for(let l=0;l<3;l++)if(l!==lane)addObs(pickTall(),l,s);coinLine(lane,s-6,7);return 0}
+function placeRowJS(s){const d=hardAt(dist),r=R();   // the penguin stays in the middle lane
+  if(s>=nextItemS){addItem('fly',1,s-9);nextItemS=s+350+R()*300}
+  if(s>700&&R()<.05)return rowKicker(s);
+  if(s>260&&R()<.08)return rowGap(s);
+  if(r<.22-.1*d){coinLine(1,s-4,8+(R()*5|0));return 0}
+  if(r<.62){for(let l=0;l<3;l++)addObs('fence',l,s);coinArc(1,s);return 0}
+  addObs('gate3',1,s);coinLine(1,s-4,6,.42);return 0}
+function placeRow(s){if(SUPER)return STYLE==='js'?placeRowJS(s):placeRowLR(s);const d=hardAt(dist),r=R();const lane=R()*3|0;
   if(s>=nextItemS&&s<BOSS.next-260){addItem(R()<.5?'boost':'fly',R()*3|0,s-9);nextItemS=s+350+R()*300}
   if(s>700&&R()<.06)return rowKicker(s);
   if(s>260&&R()<.09)return rowGap(s);
@@ -726,7 +752,7 @@ function placeRow(s){const d=hardAt(dist),r=R();const lane=R()*3|0;
   if(r<.9){for(let l=0;l<3;l++)addObs('fence',l,s);coinArc(R()*3|0,s);return 0}
   addObs('gate3',1,s);coinLine(lane,s-4,6,.42);return 0}
 // the stretch before a dragon stays clear
-function spawnAhead(){while(nextS<dist+175&&nextS<BOSS.next-150){const ext=placeRow(nextS);const v=speedAt(nextS);nextS+=ext+v*.6+7.5+R()*(16*(1-hardAt(dist))+7)}}
+function spawnAhead(){while(nextS<dist+175&&nextS<bossNext()-150){const ext=placeRow(nextS);const v=speedAt(nextS);nextS+=ext+v*.6+7.5+R()*(16*(1-hardAt(dist))+7)}}
 
 /* ======================= particles ======================= */
 const snowN=Q.snow,snowPos=new Float32Array(snowN*3),snowSz=new Float32Array(snowN);for(let i=0;i<snowN;i++){snowPos[i*3]=(Math.random()-.5)*44;snowPos[i*3+1]=Math.random()*16;snowPos[i*3+2]=-Math.random()*70+12;snowSz[i]=.5+Math.random()}
@@ -827,7 +853,7 @@ function dragonAI(dt){const D=DRG,ai=BOSS.ai,P=D.root.position,L=BOSS.level;ai.t
     case'return':{const k=smooth(0,1,ai.t/1.4);P.z=lerp(-46,hz,k);P.y=lerp(7,hy,k);if(ai.t>1.4){ai.st='hover';ai.next=interval()}break}}
   D.jaw.rotation.x=damp(D.jaw.rotation.x,jaw,10,dt);D.mglow.material.opacity=damp(D.mglow.material.opacity,glow,10,dt)}
 function updateBoss(dt){
-  if(BOSS.phase==='none'){if(G.state==='run'&&dist>=BOSS.next-40)startBoss();return}
+  if(BOSS.phase==='none'){if(G.state==='run'&&dist>=bossNext()-40)startBoss();return}
   BOSS.t+=dt;const D=DRG;if(BOSS.inv>0)BOSS.inv-=dt;
   if(BOSS.phase==='warn'){if(BOSS.t>1.2&&!PL.air&&PL.fly<=0){BOSS.phase='transIn';BOSS.t=0;BOSS.py=PL.y;BOSS.pz=0;PL.lane=1}}
   else if(BOSS.phase==='transIn'){BOSS.cam=smooth(0,1,BOSS.t/1.8);BOSS.py=damp(BOSS.py,3.6,2.5,dt);
@@ -929,7 +955,8 @@ function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.
   Object.assign(PL,{lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0});PG.stars.visible=false;PG.root.visible=true;PG.root.rotation.set(0,0,0);PG.root.scale.setScalar(1);
   for(const d of dolphins){d.on=false;d.m.visible=false}updateHUD(true)}
 function startRun(){initAudio();resetRun();G.state='intro';G.introT=0;sfx('start');$('title').classList.add('hide');$('over').classList.add('hide');$('hud').classList.add('on');document.body.classList.add('running');
-  if(!store.get('tutored',false)){hint(TOUCH?'左右滑动换道 · 上滑跳跃 · 下滑滑行':'← → 换道　↑ 跳跃　↓ 滑行',3.5);store.set('tutored',true)}}
+  if(SUPER)hint(STYLE==='lr'?'左右换道，躲开冰块和雪人！':'栅栏和断桥要跳，拱门要滑！',3.5);
+  else if(!store.get('tutored',false)){hint(TOUCH?'左右滑动换道 · 上滑跳跃 · 下滑滑行':'← → 换道　↑ 跳跃　↓ 滑行',3.5);store.set('tutored',true)}}
 function crash(cause){G.state='dead';G.deadT=0;G.cause=cause;PL.boost=0;
   if(cause==='water'){sfx('splash');emit(puffs,PL.x,SEA_Y+.1,0,46,3,5,1,3.2);G.shake=.3;G.speed*=.15}
   else if(cause==='boss'){sfx('crash');G.shake=.6;PG.stars.visible=true}
@@ -945,6 +972,7 @@ let toastT=0;function toast(s){$('toast').textContent=s;$('toast').classList.add
 function banner(t,s){const b=$('banner');b.querySelector('b').textContent=t;b.querySelector('small').textContent=s||'';b.classList.remove('on');void b.offsetWidth;b.classList.add('on')}
 // input — discrete actions while running, held keys / drag while fighting the dragon
 function act(a){if(G.state!=='run'&&G.state!=='intro')return;if(BOSS.phase!=='none'&&BOSS.phase!=='warn')return;
+  if(SUPER&&(STYLE==='lr')!==(a==='left'||a==='right'))return;   // super-easy: ignore the moves this style doesn't use
   if(a==='left'||a==='right'){const n=clamp(PL.lane+(a==='left'?-1:1),0,2);if(n!==PL.lane){PL.lane=n;sfx('lane')}}
   else if(a==='jump'){if(!PL.air&&PL.fly<=0){PL.vy=PL.onKick?LAUNCH_V+1:JUMP_V;PL.air=true;PL.slideT=0;sfx(PL.onKick?'launch':'jump');emit(puffs,PL.x,PL.y+.1,0,8,1.5,1.2,.5,1.4)}}
   else if(a==='slide'){if(PL.fly>0)return;if(PL.air){PL.vy=Math.min(PL.vy,-22);PL.queueSlide=true}else if(PL.slideT<=0){PL.slideT=SLIDE_TIME;sfx('slide')}}}
@@ -968,18 +996,22 @@ cv.addEventListener('touchmove',e=>{if(!tch)return;const t=e.changedTouches[0],d
 document.querySelectorAll('#pad button').forEach(b=>{b.addEventListener('pointerdown',e=>{e.preventDefault();act(b.dataset.a);b.classList.remove('hit');void b.offsetWidth;b.classList.add('hit')});
   b.addEventListener('contextmenu',e=>e.preventDefault())});
 function applyPad(){document.body.classList.toggle('pad',TOUCH&&PAD)}applyPad();
-cv.addEventListener('touchend',e=>{if(tch&&!tch.used&&G.state==='title')startRun();tch=null});
+function setLevel(l){LEVEL=l;EASY=l!=='normal';SUPER=l==='super';store.set('level',l);applyMode()}
+function applyMode(){const b=document.body.classList;b.toggle('super',SUPER);b.toggle('only-lr',SUPER&&STYLE==='lr');b.toggle('only-js',SUPER&&STYLE==='js');
+  $('keysTxt').innerHTML=SUPER?(STYLE==='lr'?'超简单 · 只要左右换道，躲开冰块、雪人和木箱':'超简单 · 只要跳过栅栏和断桥、滑过拱门')+(TOUCH?'<br>点屏幕'+(STYLE==='lr'?'左边 / 右边换道':'任意位置跳跃'):''):TOUCH?KEYS_TOUCH:KEYS_KB}
+cv.addEventListener('touchend',e=>{if(tch&&!tch.used){if(G.state==='title')startRun();   // super-easy taps: left/right half of the screen, or tap anywhere to jump
+    else if(SUPER)act(STYLE==='js'?'jump':tch.x<innerWidth/2?'left':'right')}tch=null});
 $('startBtn').onclick=startRun;$('againBtn').onclick=startRun;$('homeBtn').onclick=toTitle;$('resumeBtn').onclick=()=>setPause(false);
 $('pauseBtn').onclick=()=>{if(G.state==='run')setPause(true);else if(G.state==='paused')setPause(false)};
 addEventListener('blur',()=>setPause(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true)});
-if(TOUCH)$('keysTxt').innerHTML='左右滑动 换道　上滑 跳跃　下滑 肚皮滑行<br>也可以按屏幕下方的按键';
+const KEYS_KB=$('keysTxt').innerHTML,KEYS_TOUCH='左右滑动 换道　上滑 跳跃　下滑 肚皮滑行<br>也可以按屏幕下方的按键';applyMode();
 /* ---------- settings panel: difficulty, buttons, trees, quality, music, sfx, screenshot, share ---------- */
-function syncSeg(){const v={easy:EASY?'1':'0',pad:PAD?'1':'0',trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0'};
+function syncSeg(){const v={level:LEVEL,style:STYLE,pad:PAD?'1':'0',trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0'};
   document.querySelectorAll('.seg[data-k]').forEach(s=>s.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v[s.dataset.k])))}
 function applyQuality(k){if(!QUALITY[k])return;qKey=k;Q=QUALITY[k];store.set('quality',k);prNow=Q.pr;prCeil=Infinity;renderer.setPixelRatio(Q.pr);renderer.setSize(innerWidth,innerHeight);
   sun.shadow.mapSize.set(Q.shadow,Q.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}buildComposer()}
 document.querySelectorAll('.seg[data-k]').forEach(s=>s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=s.dataset.k,v=b.dataset.v;initAudio();
-  if(k==='easy'){EASY=v==='1';store.set('easy',EASY)}else if(k==='pad'){PAD=v==='1';store.set('pad',PAD);applyPad()}
+  if(k==='level')setLevel(v);else if(k==='style'){STYLE=v;store.set('style',v);applyMode()}else if(k==='pad'){PAD=v==='1';store.set('pad',PAD);applyPad()}
   else if(k==='trees'){treeLv=+v;store.set('trees',treeLv);applyTrees()}else if(k==='quality')applyQuality(v);else setAudio(k,v==='1');syncSeg();syncMusicBtn()}));
 syncSeg();
 // panels (参数面板 / 操作说明) pause a running game while open
@@ -1087,7 +1119,7 @@ function updateObstacles(){for(let i=obstacles.length-1;i>=0;i--){const o=obstac
   // feed the nearest holes to the deck/rail shaders (as world-z ranges)
   for(let i=0;i<4;i++){const h=holes[i];if(h)GAPS.value[i].set(dist-h.s0,dist-h.s1);else GAPS.value[i].set(-1e5,-1e5)}}
 function updateCurve(dt,scroll){if(G.state==='title'){CRV.k=damp(CRV.k,0,1,dt);BEND.value=CRV.k*.5;return}
-  if(BOSS.phase!=='none'||dist>BOSS.next-260){CRV.segK=0;CRV.segEnd=Math.max(CRV.segEnd,dist+300)}   // straighten out for the dragon
+  if(BOSS.phase!=='none'||dist>bossNext()-260){CRV.segK=0;CRV.segEnd=Math.max(CRV.segEnd,dist+300)}   // straighten out for the dragon
   while(dist+70>CRV.segEnd){if(CRV.segK!==0){CRV.segK=0;CRV.segEnd+=140+R()*220}
     else{let sg=R()<.5?-1:1;if(CRV.head>.2)sg=-1;else if(CRV.head<-.2)sg=1;CRV.segK=sg*(.0014+R()*.0024);CRV.segEnd+=110+R()*160}}
   CRV.k=damp(CRV.k,CRV.segK,.9,dt);BEND.value=CRV.k*.5;CRV.head+=CRV.k*scroll*dt}
@@ -1131,7 +1163,7 @@ function updateWorld(dt,scroll){
   for(const b of birds){const u=b.userData;u.x+=u.v*dt;if(u.x>140)u.x=-140;const fl=Math.sin(G.t*4+u.ph)*.6;b.children[0].rotation.z=fl;b.children[1].rotation.z=-fl;b.position.set(u.x,u.y+Math.sin(G.t*.5+u.ph)*2,u.z);b.rotation.y=Math.PI/2}
   updateBurst(sparks,dt,scroll);updateBurst(puffs,dt,scroll);
   if(hintT>0){hintT-=dt;if(hintT<=0)$('hint').classList.remove('on')}}
-const timeScale=()=>EASY&&G.state!=='title'?EASY_TS:1;let bossCls=false;
+const timeScale=()=>G.state==='title'?1:SUPER?SUPER_TS:EASY?EASY_TS:1;let bossCls=false;
 function step(dt){G.t+=dt;let scroll=0;
   if(G.state==='intro'){G.introT+=dt;G.speed=lerp(0,speedAt(0),smooth(.3,1.1,G.introT));if(G.introT>=1.1)G.state='run'}
   else if(G.state==='run'){const target=BOSS.phase!=='none'?13:speedAt(dist)*(PL.boost>0?1.5:1);G.speed=damp(G.speed,target,PL.boost>0?3:2,dt)}
