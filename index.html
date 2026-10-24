@@ -231,7 +231,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.8';
+const VERSION='0.8.1';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -879,7 +879,7 @@ function shootFireball(aim,spread,spd){DRG.mouth.getWorldPosition(_w);const f=ge
 function hitPenguin(){if(BOSS.inv>0||G.state!=='run')return;BOSS.hearts--;BOSS.inv=1.6;G.shake=.45;sfx('hurt');hearts();emit(sparks,0,BOSS.py+.6*PEN_S,BOSS.pz,14,3,2,.5,1.8);if(BOSS.hearts<=0)crash('boss')}
 function damageBoss(p){BOSS.hp--;DRG.flash=.12;emit(sparks,p.x,p.y,p.z,8,2.5,2,.4,1.6);sfx('bossHit');$('bossUI').querySelector('b').style.width=Math.max(0,BOSS.hp/BOSS.max*100)+'%';
   if(BOSS.hp<=0){BOSS.phase='defeat';BOSS.t=0;const bonus=30+20*BOSS.level;G.coins+=bonus;updateHUD();banner('击败恶龙！',`奖励 ${bonus} 金币`);sfx('bossDie');
-    for(const f of FB){f.on=false;f.g.visible=false}DRG.fallV=0;DRG.splashed=false}}
+    for(const f of FB){f.on=false;f.g.visible=false}DRG.fallV=4;DRG.splashed=false}}
 function updateDragonAnim(dt){const D=DRG,t=G.t;for(const w of D.wings){w.p.rotation.z=w.sx*(Math.sin(t*4.2)*.65+.15);w.p.rotation.x=Math.sin(t*4.2+1)*.12}
   D.tail.forEach((g,i)=>{g.rotation.y=Math.sin(t*2.2-i*.6)*.18;g.rotation.x=Math.sin(t*1.7-i*.5)*.06});D.neck.forEach((g,i)=>g.rotation.x=Math.sin(t*1.6+i)*.08);
   D.body.position.y=Math.sin(t*4.2)*.15;if(D.flash>0){D.flash-=dt;D.scaleM.emissive.setRGB(.55,.12,.06)}else D.scaleM.emissive.setHex(0x200408)}
@@ -919,9 +919,10 @@ function updateBoss(dt){
     if(G.state==='run'){D.root.updateMatrixWorld(true);_pc.set(0,BOSS.py+.5*PEN_S,BOSS.pz);
       for(const h of D.hit){h.o.getWorldPosition(_w);if(_w.distanceTo(_pc)<h.r*DRG_S+.3*PEN_S){hitPenguin();break}}
       for(const f of FISH){if(!f.on)continue;for(const h of D.hit){h.o.getWorldPosition(_w);if(_w.distanceTo(f.m.position)<h.r*DRG_S+.3){f.on=false;f.m.visible=false;damageBoss(f.m.position);break}}if(BOSS.phase!=='fight')break}}}
-  else if(BOSS.phase==='defeat'){const P=D.root.position;DRG.fallV-=9*dt;P.y+=DRG.fallV*dt;P.z+=2*dt;D.root.rotation.z+=dt*1.6;D.root.rotation.x+=dt*.8;
-    if(Math.random()<.35)emit(sparks,0,P.y+(Math.random()-.5)*2,P.z+(Math.random()-.5)*3,6,3,2,.6,2);
-    if(!DRG.splashed&&P.y<SEA_Y){DRG.splashed=true;D.root.visible=false;emit(puffs,0,SEA_Y+.2,P.z,60,4,6,1.2,3.6);sfx('splash')}
+  else if(BOSS.phase==='defeat'){const P=D.root.position;DRG.fallV-=9*dt;P.y+=DRG.fallV*dt;P.z+=2*dt;P.x=damp(P.x,-18,1.6,dt);   // knocked back over the sea (x<-4) so it can't land on the boardwalk
+   D.root.rotation.z+=dt*1.6;D.root.rotation.x+=dt*.8;
+    if(Math.random()<.35)emit(sparks,P.x,P.y+(Math.random()-.5)*2,P.z+(Math.random()-.5)*3,6,3,2,.6,2);
+    if(!DRG.splashed&&P.y<SEA_Y){DRG.splashed=true;D.root.visible=false;emit(puffs,P.x,SEA_Y+.2,P.z,60,4,6,1.2,3.6);sfx('splash')}
     if(BOSS.t>2.8){BOSS.phase='transOut';BOSS.t=0;$('bossUI').classList.remove('on');$('hearts').classList.remove('on')}}
   else if(BOSS.phase==='transOut'){BOSS.cam=1-smooth(0,1,BOSS.t/1.8);BOSS.py=damp(BOSS.py,0,3,dt);BOSS.pz=damp(BOSS.pz,0,3,dt);
     if(BOSS.t>1.8){BOSS.phase='none';BOSS.cam=0;Object.assign(PL,{y:0,vy:0,air:false,x:0,lane:1});nextS=dist+60;BOSS.next+=2000;BOSS.level++;D.root.visible=false}}
