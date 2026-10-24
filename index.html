@@ -78,6 +78,19 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
 #bossUI{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);width:min(440px,60vw);text-align:center;opacity:0;transition:opacity .4s;pointer-events:none}
 #bossUI.on{opacity:1}#bossUI .bn{font-family:"Noto Serif SC",serif;font-weight:900;font-size:16px;letter-spacing:.3em;color:#ffcf9a;text-shadow:0 2px 8px rgba(80,0,0,.6)}
 #bossUI .bh{height:12px;margin-top:5px;border-radius:7px;background:rgba(30,0,10,.55);border:1px solid rgba(255,200,160,.5);overflow:hidden}#bossUI .bh b{display:block;height:100%;width:100%;background:linear-gradient(90deg,#ff4a3a,#ffa04a);transition:width .15s}
+/* coin abilities: buy a flight, and the slide-smash readiness chip */
+#power{position:fixed;right:calc(env(safe-area-inset-right,0px) + 18px);top:calc(env(safe-area-inset-top,0px) + 122px);display:none;flex-direction:column;align-items:flex-end;gap:8px;z-index:4}
+body.running:not(.boss) #power{display:flex}
+#flyBtn{display:flex;align-items:center;gap:6px;padding:8px 14px 8px 10px;letter-spacing:.12em;font-weight:700;color:#3a1a0c;border:0;background:linear-gradient(180deg,#fff0c8,#ffc65a 60%,#f0a030);box-shadow:0 6px 20px rgba(255,170,60,.4);backdrop-filter:none;-webkit-backdrop-filter:none;touch-action:none}
+#flyBtn:hover{filter:brightness(1.06);background:linear-gradient(180deg,#fff0c8,#ffc65a 60%,#f0a030)}#flyBtn:active{transform:scale(.94)}
+#flyBtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#flyBtn.no{background:rgba(52,30,52,.42);color:var(--dim);box-shadow:none;border:1px solid var(--line)}
+#power em{font-style:normal;font-size:12px;font-weight:700;display:flex;align-items:center;gap:3px;opacity:.85}
+#power em::before{content:'';width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c8,#ffd257 40%,#e09a1c 75%,#a8640c)}
+#smashTag{font-size:12px;letter-spacing:.08em;padding:5px 11px;border-radius:999px;background:rgba(52,30,52,.42);border:1px solid var(--line);color:var(--dim);display:flex;gap:6px;align-items:center;pointer-events:none;transition:background .3s,color .3s}
+#smashTag.on{color:#fff;background:rgba(255,110,70,.5);border-color:rgba(255,200,160,.6)}
+body.coinmode #smashTag,body.only-lr #smashTag{display:none}
+@media (max-width:760px){#power{top:calc(env(safe-area-inset-top,0px) + 114px)}}
 #hearts{position:fixed;left:calc(env(safe-area-inset-left,0px) + 20px);top:calc(env(safe-area-inset-top,0px) + 108px);font-size:24px;letter-spacing:4px;display:none;text-shadow:0 2px 6px rgba(0,0,0,.4)}
 #hearts.on{display:block}#hearts i{font-style:normal;color:#ff5a6a}#hearts i.off{color:rgba(255,255,255,.25)}
 #banner{position:fixed;left:50%;top:32%;transform:translate(-50%,-50%);text-align:center;opacity:0;pointer-events:none;display:flex;flex-direction:column;gap:6px;text-shadow:0 3px 18px rgba(60,0,20,.7)}
@@ -136,6 +149,10 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
 </div>
 <div id="speedfx"></div>
 <div id="pbar" class="glass"><span></span><div class="trk"><b></b></div></div>
+<div id="power">
+ <button id="flyBtn" title="飞行模式 (F)" aria-label="飞行模式"><svg viewBox="0 0 24 24"><path d="M12 14C9 8 5.5 6 2.5 6c.5 4.5 3.5 8 9.5 8.5"/><path d="M12 14c3-6 6.5-8 9.5-8-.5 4.5-3.5 8-9.5 8.5"/><path d="M6.5 9.6c1.4.4 2.6 1.2 3.6 2.3M17.5 9.6c-1.4.4-2.6 1.2-3.6 2.3"/></svg><span>飞行</span><em>50</em></button>
+ <div id="smashTag">▼ 滑行撞碎<em>10</em></div>
+</div>
 <div id="bossUI"><div class="bn">炎翼恶龙</div><div class="bh"><b></b></div></div>
 <div id="banner"><b></b><small></small></div>
 <div id="bar">
@@ -175,6 +192,9 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
  <p>红白栅栏可以跳过；“冲鸭！”拱门要滑过去；冰块、雪人、木箱只能换道躲开。断桥要及时起跳，高台可以跑上坡道或直接跳上去，跳台会把你弹飞越过断桥。</p>
  <h3>道具</h3>
  <p>⚡ <b>蓝色闪电</b> 加速冲刺 5 秒，速度提升到 1.5 倍（不无敌，小心障碍）。<br>✦ <b>金色翅膀</b> 无敌飞行 8 秒，全身金光，不会撞到障碍也不会落海，还会吸走附近三条道的金币。</p>
+ <h3>金币能力</h3>
+ <p><b>滑行撞碎</b> 攒够 10 个金币后，肚皮滑行时撞到栅栏、冰块、雪人、木箱会把它撞碎，每次花 10 个金币（高台撞不碎）。右上角的「滑行撞碎」亮起表示可以用。</p>
+ <p><b>飞行模式</b> 攒够 50 个金币，<span class="kb">按 <b>F</b> 或</span>点右上角的「飞行」按钮，花 50 个金币获得和金色翅膀一样的 8 秒无敌飞行，还会吸走三条道的金币。</p>
  <h3>Boss · 炎翼恶龙</h3>
  <p>每跑 2000 米会遇到恶龙，视角转为横版，企鹅飞在左边，你有 3 颗心。</p>
  <p class="kb">方向键 / <b>WASD</b> 上下前后移动，按住 <b>空格</b>、<b>J</b> 或鼠标左键吐小鱼攻击。</p>
@@ -188,7 +208,7 @@ body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.
  <div class="seg diffSeg" data-k="level"><button data-v="coin">吃金币</button><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div>
  <div class="seg diffSeg styleRow" data-k="style"><button data-v="lr">◀ ▶ 只左右</button><button data-v="js">▲ ▼ 只跳滑</button></div>
  <div id="best"></div>
- <div class="keys" id="keysTxt"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> 或 <b>空格</b> 跳跃　<b>↓</b> 或 <b>S</b> 肚皮滑行　<b>P</b> 暂停</div></div>
+ <div class="keys" id="keysTxt"><b>←</b><b>→</b> 或 <b>A</b><b>D</b> 换道　<b>↑</b> 或 <b>空格</b> 跳跃　<b>↓</b> 或 <b>S</b> 肚皮滑行　<b>F</b> 金币飞行　<b>P</b> 暂停</div></div>
 </div>
 <div id="over" class="screen hide"><div class="card glass">
  <h2 id="overTitle">摔倒啦</h2>
@@ -211,7 +231,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.7';
+const VERSION='0.8';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -269,23 +289,43 @@ function prep(root){root.traverse(o=>{if(!(o.isMesh||o.isPoints||o.isLine))retur
 const CRV={k:0,segK:0,segEnd:200,head:0};   // current curvature, target, where the current segment ends, accumulated heading
 const BOSS={next:2000,level:1,phase:'none',t:0,cam:0,hp:1,max:1,hearts:3,inv:0,py:0,pz:0,shotT:0,sunK:0};   // dragon fight state (see updateBoss)
 
-/* ======================= sunset palette =======================
-   one table of coordinated colours keyed by sun elevation (degrees); the run slowly drifts golden hour -> dusk -> back */
+/* ======================= day palette =======================
+   tables of coordinated colours keyed by sun elevation (degrees). KEYS is the evening (warm amber/violet), KEYS_AM the morning
+   (pinker, cooler); from 25° up both share the same daylight keys, so swapping tables around noon is invisible */
+const DAY_KEYS=[
+ {e:25,  zen:'#3a6cc0',hor:'#b8cde6',gnd:'#66646a',sun:'#fff0da',li:2.2,hs:'#a8c0e2',hg:'#66604e',hi:.7, fog:'#bfcfe2',exp:.75,ct:'#fbfbff',cs:'#a2aec4',bloom:.2, night:0},
+ {e:52,  zen:'#3266c4',hor:'#aec8e8',gnd:'#6c707c',sun:'#fff6ea',li:2.2,hs:'#b0c6ea',hg:'#6c6452',hi:.72,fog:'#bccde4',exp:.72,ct:'#ffffff',cs:'#a8b6cc',bloom:.18,night:0}];
+const KEYS_AM=[
+ {e:-6,  zen:'#1a2250',hor:'#5c4c7c',gnd:'#20202e',sun:'#ff7a6a',li:.35,hs:'#45508a',hg:'#22202c',hi:.62,fog:'#4e4a70',exp:1.2, ct:'#a07a9a',cs:'#2e2c50',bloom:.6, night:.85},
+ {e:-1.5,zen:'#2a3a78',hor:'#e08a8e',gnd:'#3a2c3a',sun:'#ff8a6a',li:.9, hs:'#6a70aa',hg:'#3a2c34',hi:.6, fog:'#ae8a9c',exp:1.06,ct:'#ffb0a0',cs:'#5a4a72',bloom:.46,night:.4},
+ {e:3,   zen:'#3a5aa0',hor:'#f6ac8e',gnd:'#4a3a3e',sun:'#ffa274',li:1.7,hs:'#8a96c8',hg:'#4a3a36',hi:.64,fog:'#d8a8a2',exp:.94,ct:'#ffc8b4',cs:'#7a6a8e',bloom:.36,night:.08},
+ {e:7,   zen:'#4268b0',hor:'#f8c2a4',gnd:'#5a4840',sun:'#ffbe8c',li:2.1,hs:'#9eaad6',hg:'#584838',hi:.68,fog:'#e0bcae',exp:.88,ct:'#ffdcc8',cs:'#8a7c96',bloom:.3, night:0},
+ {e:12,  zen:'#4670ba',hor:'#eccdb8',gnd:'#645444',sun:'#ffd8ae',li:2.3,hs:'#a8bade',hg:'#625440',hi:.7, fog:'#dccabe',exp:.84,ct:'#ffe8d6',cs:'#9a92a6',bloom:.26,night:0},
+ ...DAY_KEYS].map(k=>{const o={...k};for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs'])o[c]=new THREE.Color(k[c]);return o});
 const KEYS=[
- {e:-6, zen:'#171d47',hor:'#9a4f68',gnd:'#24192a',sun:'#ff5e3a',li:.35,hs:'#43467e',hg:'#251a28',hi:.62,fog:'#5e4566',exp:1.28,ct:'#b8707a',cs:'#33284c',bloom:.8, night:.85},
- {e:-1.5,zen:'#223066',hor:'#dc7258',gnd:'#38242e',sun:'#ff7438',li:.95,hs:'#6462a0',hg:'#382830',hi:.6, fog:'#b3746f',exp:1.14,ct:'#ff9a74',cs:'#553c66',bloom:.68,night:.45},
- {e:3,   zen:'#30468a',hor:'#ff955a',gnd:'#4a3030',sun:'#ff9448',li:1.9,hs:'#8786be',hg:'#4a3630',hi:.62,fog:'#e1936f',exp:1.0, ct:'#ffbb8c',cs:'#71547a',bloom:.56,night:.1},
- {e:7,   zen:'#38589e',hor:'#ffae74',gnd:'#584036',sun:'#ffb066',li:2.5,hs:'#98a0cd',hg:'#564234',hi:.66,fog:'#ebac88',exp:.95,ct:'#ffd0a6',cs:'#866c86',bloom:.48,night:0},
- {e:12,  zen:'#3d66ae',hor:'#ffc48e',gnd:'#664e3e',sun:'#ffc684',li:2.9,hs:'#a6b4da',hg:'#625038',hi:.7, fog:'#efc09e',exp:.92,ct:'#ffe0c0',cs:'#988292',bloom:.42,night:0}
-].map(k=>{const o={...k};for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs'])o[c]=new THREE.Color(k[c]);return o});
-const PAL={};
-function samplePalette(e){let i=0;while(i<KEYS.length-2&&e>KEYS[i+1].e)i++;const a=KEYS[i],b=KEYS[i+1],t=clamp((e-a.e)/(b.e-a.e),0,1);
-  for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs']){(PAL[c]||(PAL[c]=new THREE.Color())).copy(a[c]).lerp(b[c],t)}
-  for(const n of ['li','hi','exp','bloom','night'])PAL[n]=lerp(a[n],b[n],t);return PAL}
+ {e:-6, zen:'#171d47',hor:'#9a4f68',gnd:'#24192a',sun:'#ff5e3a',li:.35,hs:'#43467e',hg:'#251a28',hi:.62,fog:'#5e4566',exp:1.22,ct:'#b8707a',cs:'#33284c',bloom:.62,night:.85},
+ {e:-1.5,zen:'#223066',hor:'#dc7258',gnd:'#38242e',sun:'#ff7438',li:.95,hs:'#6462a0',hg:'#382830',hi:.6, fog:'#b3746f',exp:1.08,ct:'#ff9a74',cs:'#553c66',bloom:.5, night:.45},
+ {e:3,   zen:'#30468a',hor:'#f8925c',gnd:'#4a3030',sun:'#ff9448',li:1.8,hs:'#8786be',hg:'#4a3630',hi:.62,fog:'#d8926f',exp:.94,ct:'#ffbb8c',cs:'#71547a',bloom:.4, night:.1},
+ {e:7,   zen:'#38589e',hor:'#f8aa76',gnd:'#584036',sun:'#ffb066',li:2.3,hs:'#98a0cd',hg:'#564234',hi:.66,fog:'#e0a888',exp:.88,ct:'#ffd0a6',cs:'#866c86',bloom:.34,night:0},
+ {e:12,  zen:'#3d66ae',hor:'#f4c092',gnd:'#664e3e',sun:'#ffc684',li:2.5,hs:'#a6b4da',hg:'#625038',hi:.7, fog:'#e4bea2',exp:.85,ct:'#ffe0c0',cs:'#988292',bloom:.3, night:0},
+ ...DAY_KEYS].map(k=>{const o={...k};for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs'])o[c]=new THREE.Color(k[c]);return o});
+const PAL={},PAL_AM={};
+function sampleKeys(K,e,P){let i=0;while(i<K.length-2&&e>K[i+1].e)i++;const a=K[i],b=K[i+1],t=clamp((e-a.e)/(b.e-a.e),0,1);
+  for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs']){(P[c]||(P[c]=new THREE.Color())).copy(a[c]).lerp(b[c],t)}
+  for(const n of ['li','hi','exp','bloom','night'])P[n]=lerp(a[n],b[n],t);return P}
+// am: 1 = morning table, 0 = evening table (they are identical above 25°, where the swap happens)
+function samplePalette(e,am=0){sampleKeys(KEYS,e,PAL);if(am<=0)return PAL;sampleKeys(KEYS_AM,e,PAL_AM);
+  for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs'])PAL[c].lerp(PAL_AM[c],am);
+  for(const n of ['li','hi','exp','bloom','night'])PAL[n]=lerp(PAL[n],PAL_AM[n],am);return PAL}
 const SUN_AZ=new THREE.Vector2(-.34,-1).normalize();   // the sun sets ahead and a little to the left, over the sea
 const sunDir=new THREE.Vector3(),lightDir=new THREE.Vector3(),azNow=new THREE.Vector2();
 function sunVec(eDeg,out){const e=eDeg*Math.PI/180;return out.set(Math.cos(e)*azNow.x,Math.sin(e),Math.cos(e)*azNow.y)}
-const elevAt=d=>3+5.5*Math.cos(d/3600*Math.PI*2);   // 8.5° golden hour at the start, -2.5° dusk around 1800 m
+// one day every DAY_LEN metres: sunrise at the start -> noon -> golden hour and sunset near the 2000 m dragon -> starry night -> dawn
+const DAY_LEN=2400,DAY_P0=.04;
+const DAY_E=[[0,-1.5],[.06,5],[.2,22],[.35,42],[.47,52],[.6,38],[.72,18],[.82,7],[.88,1],[.92,-4],[.96,-6.5],[1,-1.5]];   // [phase, sun elevation°]
+const dayPhase=d=>((d/DAY_LEN+DAY_P0)%1+1)%1;
+function elevAt(d){const p=dayPhase(d);let i=0;while(p>DAY_E[i+1][0])i++;const[a,ea]=DAY_E[i],[b,eb]=DAY_E[i+1];const t=(p-a)/(b-a);return lerp(ea,eb,t*t*(3-2*t))}
+const amAt=d=>{const p=dayPhase(d);return p<.47?1:p<.97?0:smooth(.97,1,p)};   // morning colours until noon; the late-night stretch eases into the dawn palette
 
 /* ======================= shared GLSL ======================= */
 const SKY={uSunDir:{value:new THREE.Vector3()},uZen:{value:new THREE.Color()},uHor:{value:new THREE.Color()},uGnd:{value:new THREE.Color()},uSun:{value:new THREE.Color()},
@@ -306,7 +346,7 @@ vec3 skyBase(vec3 d){
   c=mix(c,c*vec3(.74,.78,1.12),away*t*.55);             // the side away from the sun cools to violet
   if(y<0.)c=mix(uHor*mix(1.,.82,away),uGnd,smoothstep(0.,-.22,y));
   float mu=max(dot(d,uSunDir),0.);
-  c+=uSun*(pow(mu,3.)*.2+pow(mu,24.)*.42+pow(mu,260.)*1.3)*(.45+.55*t);
+  c+=uSun*(pow(mu,3.)*.16+pow(mu,24.)*.3+pow(mu,260.)*.8)*(.45+.55*t);
   return c;}`;
 
 /* ======================= sky ======================= */
@@ -314,7 +354,7 @@ const skyMat=new THREE.ShaderMaterial({uniforms:SKY,side:THREE.BackSide,depthWri
  vertexShader:`varying vec3 vDir;void main(){vDir=position;vec4 p=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_Position=p.xyww;}`,
  fragmentShader:`${NOISE}${SKYFN}uniform vec3 uCT,uCS;uniform vec2 uCloud;uniform float uHead;varying vec3 vDir;
  void main(){vec3 d=normalize(vDir);vec3 c=skyBase(d);float mu=dot(d,uSunDir);
-  c+=uSun*smoothstep(.99955,.99978,mu)*8.;
+  c+=uSun*smoothstep(.99955,.99978,mu)*4.;
   float ch=cos(uHead),sh=sin(uHead);vec3 dr=vec3(ch*d.x+sh*d.z,d.y,-sh*d.x+ch*d.z);   // clouds and stars turn with the road
   if(uNight>.02&&d.y>0.){vec3 p=dr*240.;vec3 ce=floor(p);float h=hash13(ce);
     if(h>.9962){float s=smoothstep(.42,0.,length(fract(p)-.5));c+=vec3(1.,.9,.82)*s*uNight*2.2*smoothstep(.06,.4,d.y)*(.6+.4*sin(uTime*2.+h*80.));}}
@@ -464,9 +504,11 @@ const seaMat=new THREE.ShaderMaterial({uniforms:Object.assign({uOff:{value:0},uD
    vec3 water=mix(uShallow,uDeep,smoothstep(10.,120.,dist))*(.15+.85*uDay);
    float sss=pow(max(dot(V,-uSunDir),0.),4.)*.4;water+=uShallow*uSun*sss;
    vec3 col=mix(water,refl,fr);
-   float rs=max(dot(R,uSunDir),0.);col+=uSun*(pow(rs,700.)*36.+pow(rs,80.)*1.1+pow(rs,10.)*.06)*step(-.06,uSunDir.y);
+   float rs=max(dot(R,uSunDir),0.);col+=uSun*(pow(rs,900.)*7.+pow(rs,140.)*.32+pow(rs,12.)*.03)*smoothstep(-.06,.02,uSunDir.y);   // soft glints, no blinding sun path
    float ff=1.-exp(-pow(dist*.0021,1.5));vec3 fd=normalize(vec3(vW.x-cameraPosition.x,.0015*dist+.002,vW.z-cameraPosition.z));
-   col=mix(col,skyBase(fd),clamp(ff,0.,1.));gl_FragColor=vec4(col,1.);}`});
+   col=mix(col,skyBase(fd),clamp(ff,0.,1.));
+   float pk=max(col.r,max(col.g,col.b));col*=1./(1.+max(pk-.85,0.)*.9);   // shoulder: the brightest glare rolls off instead of clipping to white
+   gl_FragColor=vec4(col,1.);}`});
 const sea=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000,200,200).rotateX(-Math.PI/2),seaMat);sea.position.set(-500,SEA_Y,-1200);sea.frustumCulled=false;scene.add(sea);
 
 /* ======================= static world: boardwalk, shore, rails, far scenery ======================= */
@@ -929,6 +971,7 @@ function sfx(k){if(!AU.ctx||!AU.sfxOn)return;const t=AU.ctx.currentTime;
   if(k==='roar'){noise(t,1.1,500,120,.55,'lowpass',2);tone(110,t,1.0,'sawtooth',.18,null,55);tone(82,t+.05,1.0,'square',.08,null,41);return}
   if(k==='pew'){tone(880,t,.08,'sine',.07,null,1320);return}
   if(k==='fire'){noise(t,.35,1500,300,.22,'bandpass',.8);tone(160,t,.25,'sawtooth',.05,null,80);return}
+  if(k==='smash'){noise(t,.4,1600,180,.45,'lowpass');tone(170,t,.28,'square',.12,null,55);[660,990,1320].forEach((f,i)=>tone(f,t+.04+i*.04,.12,'triangle',.07));return}
   if(k==='hurt'){tone(440,t,.25,'square',.12,null,140);noise(t,.2,3000,500,.25);return}
   if(k==='bossHit'){tone(240,t,.06,'square',.06,null,120);noise(t,.06,2500,1200,.12);return}
   if(k==='bossDie'){tone(220,t,1.4,'sawtooth',.2,null,40);noise(t,1.5,3000,100,.5,'lowpass',.8);[523,659,784,1047,1319].forEach((f,i)=>tone(f,t+.9+i*.1,.5,'triangle',.12));return}
@@ -957,7 +1000,8 @@ function setAudio(k,on){AU[k==='music'?'music':'sfxOn']=on;store.set(k,on);if(AU
 const G={state:'title',speed:0,coins:0,best:store.get('best',{d:0,c:0}),t:0,introT:0,deadT:0,shake:0,cause:'',pausedBySet:false};
 const PL={lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,ph:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0};
 const SLIDE_TIME=.72,JUMP_V=10.4,GRAV=30,LAUNCH_V=11.5,FLY_Y=3.7,BOOST_T=5.5,FLY_T=8;
-function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.length=0;dist=0;nextS=60;nextItemS=320;R=rng((Date.now()^0x5bd1e995)>>>0);G.coins=0;G.speed=0;G.shake=0;
+const SMASH_COST=10,FLY_COST=50;   // coin abilities: belly-slide through an obstacle / buy a golden-wing flight
+function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.length=0;dist=0;nextS=60;nextItemS=320;R=rng((Date.now()^0x5bd1e995)>>>0);G.coins=0;G.speed=0;G.shake=0;G.told={};
   for(const it of items)it.got=true;updateItems();clearBoss();
   Object.assign(CRV,{k:0,segK:0,segEnd:200,head:0});BEND.value=0;
   Object.assign(PL,{lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0});PG.stars.visible=false;PG.root.visible=true;PG.root.rotation.set(0,0,0);PG.root.scale.setScalar(1);
@@ -991,7 +1035,7 @@ addEventListener('keydown',e=>{const k=e.code;if(panelOpen()){if(k==='Escape')cl
   if(k==='KeyP'||k==='Escape'){if(G.state==='run')setPause(true);else if(G.state==='paused')setPause(false);return}
   if(G.state==='paused'&&(k==='Enter'||k==='Space')){setPause(false);return}
   KEY[k]=true;
-  if(!e.repeat){if(k==='ArrowLeft'||k==='KeyA')act('left');else if(k==='ArrowRight'||k==='KeyD')act('right');else if(k==='ArrowUp'||k==='KeyW'||k==='Space')act('jump');else if(k==='ArrowDown'||k==='KeyS')act('slide')}
+  if(!e.repeat){if(k==='ArrowLeft'||k==='KeyA')act('left');else if(k==='ArrowRight'||k==='KeyD')act('right');else if(k==='ArrowUp'||k==='KeyW'||k==='Space')act('jump');else if(k==='ArrowDown'||k==='KeyS')act('slide');else if(k==='KeyF')buyFly()}
   if(k.startsWith('Arrow')||k==='Space')e.preventDefault()});
 addEventListener('keyup',e=>{KEY[e.code]=false});
 let tch=null;const cv=renderer.domElement;
@@ -1006,7 +1050,7 @@ document.querySelectorAll('#pad button').forEach(b=>{b.addEventListener('pointer
   b.addEventListener('contextmenu',e=>e.preventDefault())});
 function applyPad(){document.body.classList.toggle('pad',TOUCH&&PAD)}applyPad();
 function setLevel(l){LEVEL=l;EASY=l!=='normal';SUPER=l==='super';COIN=l==='coin';store.set('level',l);applyMode()}
-function applyMode(){const b=document.body.classList;b.toggle('super',SUPER);b.toggle('only-lr',SUPER&&STYLE==='lr');b.toggle('only-js',SUPER&&STYLE==='js');
+function applyMode(){const b=document.body.classList;b.toggle('super',SUPER);b.toggle('coinmode',COIN);b.toggle('only-lr',SUPER&&STYLE==='lr');b.toggle('only-js',SUPER&&STYLE==='js');
   $('keysTxt').innerHTML=COIN?'吃金币 · 没有障碍也没有断桥，随便跑，永远不会摔倒'+(TOUCH?'<br>滑动或按屏幕按键换道、跳跃':''):SUPER?(STYLE==='lr'?'超简单 · 只要左右换道，躲开冰块、雪人和木箱':'超简单 · 只要跳过栅栏和断桥、滑过拱门')+(TOUCH?'<br>点屏幕'+(STYLE==='lr'?'左边 / 右边换道':'任意位置跳跃'):''):TOUCH?KEYS_TOUCH:KEYS_KB}
 cv.addEventListener('touchend',e=>{if(tch&&!tch.used){if(G.state==='title')startRun();   // super-easy taps: left/right half of the screen, or tap anywhere to jump
     else if(SUPER)act(STYLE==='js'?'jump':tch.x<innerWidth/2?'left':'right')}tch=null});
@@ -1056,10 +1100,15 @@ document.addEventListener('fullscreenchange',syncFs);document.addEventListener('
 $('shotBtn').onclick=screenshot;$('linkBtn').onclick=copyLink;
 
 /* ======================= HUD ======================= */
-let hudD=-1,hudC=-1;
+let hudD=-1,hudC=-1,hudP=-1;
 function updateHUD(force){const d=Math.floor(dist);if(d!==hudD||force){hudD=d;$('dist').firstChild.firstChild.nodeValue=d}
   if(G.coins!==hudC||force){if(G.coins>hudC&&!force){const el=$('coins');el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}hudC=G.coins;$('coins').querySelector('b').textContent=G.coins}
-  if(force)$('bestTxt').textContent=`最佳 ${G.best.d} m`}
+  if(force)$('bestTxt').textContent=`最佳 ${G.best.d} m`;
+  const smashOk=G.coins>=SMASH_COST,flyOk=canFly(),pk=+smashOk+2*flyOk;
+  if(pk!==hudP||force){hudP=pk;$('smashTag').classList.toggle('on',smashOk);$('flyBtn').classList.toggle('no',!flyOk)}
+  if(G.told&&G.state==='run'){const slideOn=!COIN&&!(SUPER&&STYLE==='lr');   // tell each ability once per run, the first time it becomes affordable
+    if(slideOn&&smashOk&&!G.told.smash){G.told.smash=1;hint(`有 ${SMASH_COST} 个金币了：肚皮滑行可以撞碎障碍！`,2.6)}
+    else if(G.coins>=FLY_COST&&!G.told.fly&&hintT<=0){G.told.fly=1;hint(TOUCH?'金币够啦：点右上角「飞行」起飞！':'金币够啦：按 F 开启飞行模式！',2.6)}}}
 
 /* ======================= update ======================= */
 function updateVertical(dt){const gr=groundAt(PL.x,dist);
@@ -1114,12 +1163,21 @@ function updatePlayer(dt){const t=G.t,B=PG.body,bossFly=bossFlying()||(G.cause==
   else PG.root.rotation.y=Math.PI+PL.lean*-.5}
 function collide(){const ph=PL.slideT>0?.5:1.05,hw=.3,safe=PL.fly>0||PL.invT>0||COIN;   // coin mode: obstacles left over from switching mid-run can't hurt
   if(!safe)for(const o of obstacles){if(!o.box)continue;const z=dist-o.s-(o.box.oz||0);if(Math.abs(z)>o.box.d/2+.35)continue;if(Math.abs(PL.x-o.x)>o.box.w/2+hw)continue;
-    if(PL.y+ph>o.box.y0+.04&&PL.y<o.box.y1){crash('hit');return}}
+    if(PL.y+ph>o.box.y0+.04&&PL.y<o.box.y1){if(PL.slideT>0&&G.coins>=SMASH_COST&&o.box.d<4){smash(o,z);continue}crash('hit');return}}
   for(const c of coins){if(c.got)continue;const z=dist-c.s;
     const near=PL.fly>0?Math.abs(z)<1.4&&Math.abs(PL.x-c.x)<4.6:Math.abs(z)<.7&&Math.abs(PL.x-c.x)<.75&&Math.abs(PL.y+.55-c.y)<.85;   // golden flight pulls in coins from every lane
     if(near){c.got=true;G.coins++;if(G.t-coinT<.6)coinCombo++;else coinCombo=0;coinT=G.t;sfx('coin');emit(sparks,c.x,c.y,z,9,2.4,2.5,.55,1.6)}}
   for(const it of items){if(it.got)continue;const z=dist-it.s;if(Math.abs(z)<1&&Math.abs(PL.x-it.x)<1&&Math.abs(PL.y+.5-it.y)<1.4){it.got=true;emit(sparks,it.x,it.y,z,22,3,3,.7,2);
       if(it.type==='boost'){PL.boost=BOOST_T;sfx('boost');hint('⚡ 加速冲刺！',1.6)}else{PL.fly=FLY_T;PL.invT=0;PL.slideT=0;sfx('fly');hint('✦ 无敌飞行！',1.6)}}}}
+// sliding into a fence / ice / snowman / crates with enough coins breaks it (platforms are too big)
+function smash(o,z){G.coins-=SMASH_COST;o.box=null;o.g.visible=false;G.shake=.25;PL.slideT=Math.max(PL.slideT,.3);sfx('smash');
+  emit(puffs,o.x,.9,z,30,4,4,.8,2.4);emit(sparks,o.x,1,z,18,4,4,.6,1.8);hint(`撞碎啦！-${SMASH_COST} 金币`,1.2);updateHUD()}
+const canFly=()=>G.state==='run'&&BOSS.phase==='none'&&bossNext()-dist>260&&PL.fly<=0&&G.coins>=FLY_COST;
+function buyFly(){if(G.state!=='run'||BOSS.phase!=='none'||PL.fly>0)return;
+  if(bossNext()-dist<=260){hint('恶龙快来了，先别飞',1.4);return}
+  if(G.coins<FLY_COST){hint(`还差 ${FLY_COST-G.coins} 个金币才能飞`,1.4);return}
+  G.coins-=FLY_COST;PL.fly=FLY_T;PL.invT=0;PL.slideT=0;PL.queueSlide=false;sfx('fly');hint(`✦ 飞行模式！-${FLY_COST} 金币`,1.6);updateHUD()}
+$('flyBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();buyFly()});
 function updateCoins(){for(let i=coins.length-1;i>=0;i--)if(dist-coins[i].s>BEHIND)coins.splice(i,1);let n=0;
   for(const c of coins){if(c.got)continue;const z=dist-c.s;if(z<-260)continue;_q.setFromAxisAngle(_v.set(0,1,0),G.t*3.2+c.ph);_m.compose(_v.set(c.x,c.y+Math.sin(G.t*3+c.ph)*.06,z),_q,_s.set(1,1,1));coinIM.setMatrixAt(n++,_m)}
   coinIM.count=n;coinIM.instanceMatrix.needsUpdate=true}
@@ -1149,19 +1207,19 @@ function updateCamera(dt){const t=G.t;
   if(Math.abs(camera.fov-fov)>.05){camera.fov=damp(camera.fov,fov,4,dt);camera.updateProjectionMatrix()}}
 let envT=0;const _c1=new THREE.Color();
 function updateAtmosphere(dt){const e=elevAt(dist),head=CRV.head+BOSS.cam*.7;   // in the side view the sun swings round to sit behind the dragon
-  samplePalette(e);const ch=Math.cos(-head),sh=Math.sin(-head);
+  samplePalette(e,amAt(dist));const ch=Math.cos(-head),sh=Math.sin(-head);
   azNow.set(SUN_AZ.x*ch-SUN_AZ.y*sh,SUN_AZ.x*sh+SUN_AZ.y*ch);sunVec(e,sunDir);far.rotation.y=head;SKY.uHead.value=head;
   SKY.uSunDir.value.copy(sunDir);SKY.uZen.value.copy(PAL.zen);SKY.uHor.value.copy(PAL.hor);SKY.uGnd.value.copy(PAL.gnd);SKY.uSun.value.copy(PAL.sun);SKY.uCT.value.copy(PAL.ct);SKY.uCS.value.copy(PAL.cs);
   SKY.uNight.value=PAL.night;SKY.uTime.value=G.t;SKY.uCloud.value.set(G.t*.004,-dist*.0006-G.t*.002);
   sunVec(Math.max(e,1)+13,lightDir);sun.position.copy(sun.target.position).addScaledVector(lightDir,90);sun.color.copy(PAL.sun);sun.intensity=PAL.li;
   hemi.color.copy(PAL.hs);hemi.groundColor.copy(PAL.hg);hemi.intensity=PAL.hi;scene.fog.color.copy(PAL.fog);
-  renderer.toneMappingExposure=PAL.exp;if(bloomPass){bloomPass.strength=PAL.bloom;bloomPass.threshold=lerp(.9,.78,PAL.night)}
+  renderer.toneMappingExposure=PAL.exp;if(bloomPass){bloomPass.strength=PAL.bloom;bloomPass.threshold=lerp(.95,.82,PAL.night)}
   seaMat.uniforms.uDay.value=clamp(PAL.li/2.6+.15,.15,1);seaMat.uniforms.uOff.value=dist%10000;
   const nightK=PAL.night;M.lamp.emissiveIntensity=1.2+nightK*5;glowMat.opacity=.35+nightK*.65;glowMat.size=2.2+nightK*1.6;poolMat.opacity=.12+nightK*.75;
   for(const c of cabins)c.g.userData.win.emissiveIntensity=1+nightK*3.2;
   snowMat.uniforms.uCol.value.copy(PAL.sun).lerp(_c1.setRGB(1,1,1),.55);
   for(const m of mtnMats){_c1.copy(PAL.zen).lerp(PAL.hor,m.userData.layer?.62:.42).multiplyScalar(m.userData.layer?1.0:.82);m.color.copy(_c1)}
-  envT+=dt;if((Math.abs(e-envE)>.45||Math.abs(head-envH)>.1)&&envT>.5){envT=0;bakeEnv(e,head)}}
+  envT+=dt;if((Math.abs(e-envE)>(e>12?3:.6)||Math.abs(head-envH)>.1)&&envT>.5){envT=0;bakeEnv(e,head)}}
 function updateWorld(dt,scroll){
   deckT.map.offset.y=deckT.normalMap.offset.y=deckT.roughnessMap.offset.y=dist/DECK_TILE;
   snowT.map.offset.y=snowT.normalMap.offset.y=dist/20;
@@ -1207,7 +1265,7 @@ function frame(now){requestAnimationFrame(frame);const real=Math.min(.25,(now-la
 updateAtmosphere(0);bakeEnv(elevAt(0));updateWorld(0,0);updateCamera(1);showBest();
 requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);$('loading').classList.add('hide');$('title').classList.remove('hide')});
 window.__G={G,PL,CRV,step,act,startRun,toTitle,get dist(){return dist},set dist(v){dist=v},obstacles,coins,holes,plats,kickers,dolphins,decor,spawnPod,renderer,composer,placeRow,rowGap,rowPlat,rowKicker,clearObs,
-  set nextS(v){nextS=v},get nextS(){return nextS},BOSS,DRG,FB,FISH,KEY,items,addItem,startBoss,crash,screenshot,openSettings,
+  set nextS(v){nextS=v},get nextS(){return nextS},BOSS,DRG,FB,FISH,KEY,items,addItem,addObs,buyFly,startBoss,crash,screenshot,openSettings,
   setMouseFire:v=>mouseFire=v,
   setQuality:k=>{store.set('quality',k);location.reload()}};
 </script>
