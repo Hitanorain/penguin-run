@@ -71,6 +71,11 @@ body:not(.super) .styleRow{display:none!important}
 body.only-lr #pad .pr,body.only-js #pad .pl{display:none}
 body.only-lr #pad .pl,body.only-js #pad .pr{flex:1;justify-content:space-between}
 body.only-lr #pad button,body.only-js #pad button{width:110px;height:110px}body.only-lr #pad svg,body.only-js #pad svg{width:46px;height:46px}
+/* iPad: both thumbs rest near the middle of a big screen, so pull the buttons in toward the centre and lift them a little */
+body.ipad #pad{justify-content:center;gap:min(18vw,200px);bottom:calc(env(safe-area-inset-bottom,0px) + 7vh)}
+body.ipad #pad .pl,body.ipad #pad .pr{gap:20px}
+body.ipad.only-lr #pad .pl,body.ipad.only-js #pad .pr{flex:0 0 auto;justify-content:center;gap:min(18vw,200px)}
+body.ipad.pad.running #hint{bottom:calc(env(safe-area-inset-bottom,0px) + 7vh + 130px)}
 /* power-up timer, boss bar, hearts, banner */
 #pbar{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 16px);transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:7px 14px;opacity:0;transition:opacity .3s}
 #pbar.on{opacity:1}#pbar span{font-size:13px;letter-spacing:.12em;white-space:nowrap}#pbar .trk{width:120px;height:7px;border-radius:5px;background:rgba(255,255,255,.18);overflow:hidden}
@@ -231,7 +236,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.8.1';
+const VERSION='0.8.2';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -1079,6 +1084,7 @@ $('helpBtn').onclick=()=>$('help').classList.contains('hide')?openPanel('help'):
 $('setClose').onclick=closePanels;$('helpClose').onclick=closePanels;
 for(const p of PANELS)$(p).addEventListener('click',e=>{if(e.target===$(p))closePanels()});   // tap outside the card to close
 if(TOUCH)document.body.classList.add('touch');
+if(/iPad/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1))document.body.classList.add('ipad');   // iPadOS 13+ reports itself as a Mac
 function screenshot(){composer.render();const src=renderer.domElement,c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);
   const s=c.height/720,d=G.state==='title'?G.best.d:Math.floor(dist);g.shadowColor='rgba(60,10,30,.6)';g.shadowBlur=14*s;g.fillStyle='#fff4e6';
   g.font=`900 ${38*s}px "Noto Serif SC",serif`;g.fillText('企鹅跑酷',28*s,c.height-58*s);g.font=`500 ${18*s}px "Noto Sans SC",sans-serif`;
