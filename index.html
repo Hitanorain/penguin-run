@@ -146,6 +146,12 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
 #loading.hide{opacity:0;pointer-events:none}
 #hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);font-size:13px;letter-spacing:.12em;color:var(--fg);padding:8px 18px;border-radius:999px;background:rgba(52,30,52,.4);opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap}
 #hint.on{opacity:1}
+/* voice cheer subtitles */
+#cheer{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 74px);transform:translateX(-50%);max-width:88vw;text-align:center;display:flex;flex-direction:column;gap:3px;opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;text-shadow:0 2px 12px rgba(60,0,20,.75)}
+#cheer b{font-size:clamp(17px,2.6vw,24px);font-weight:800;letter-spacing:.05em;color:#fff2d8}
+#cheer span{font-size:14px;letter-spacing:.14em;color:#ffd6a8}#cheer span:empty{display:none}
+#cheer.on{opacity:1;transform:translateX(-50%) translateY(4px)}
+@media (max-width:760px){#cheer{top:calc(env(safe-area-inset-top,0px) + 108px)}}
 @media (max-height:480px){#title h1{font-size:44px}#title{gap:10px;padding-top:16px;padding-bottom:16px}.keys{display:none}#dist b{font-size:24px}#over .card{padding:16px 24px}#over h2{font-size:26px}}
 </style>
 </head>
@@ -180,7 +186,7 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <div class="pl"><button data-a="left" aria-label="向左"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><button data-a="right" aria-label="向右"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button></div>
  <div class="pr"><button data-a="slide" aria-label="滑行"><svg viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg><span>滑</span></button><button data-a="jump" class="jp" aria-label="跳跃"><svg viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg><span>跳</span></button></div>
 </div>
-<div id="hint"></div><div id="toast"></div>
+<div id="hint"></div><div id="toast"></div><div id="cheer"><b></b><span></span></div>
 <div id="settings" class="screen hide"><div class="card glass">
  <h2>设置</h2>
  <div class="opt"><span>难度</span><div class="seg" data-k="level"><button data-v="coin">吃金币</button><button data-v="super">超简单</button><button data-v="easy">简单</button><button data-v="normal">普通</button></div></div>
@@ -190,6 +196,7 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <div class="opt"><span>画质</span><div class="seg" data-k="quality"><button data-v="low">流畅</button><button data-v="mid">均衡</button><button data-v="high">精美</button></div></div>
  <div class="opt"><span>音乐</span><div class="seg" data-k="music"><button data-v="1">开</button><button data-v="0">关</button></div></div>
  <div class="opt"><span>音效</span><div class="seg" data-k="sfx"><button data-v="1">开</button><button data-v="0">关</button></div></div>
+ <div class="opt"><span>语音鼓励</span><div class="seg" data-k="voice"><button data-v="zh">中文</button><button data-v="en">English</button><button data-v="both">双语</button><button data-v="off">关</button></div></div>
  <button id="setClose" class="big">继续</button>
 </div></div>
 <div id="help" class="screen hide"><div class="card glass">
@@ -206,6 +213,8 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <h3>金币能力</h3>
  <p><b>滑行撞碎</b> 攒够 10 个金币后，肚皮滑行时撞到栅栏、冰块、雪人、木箱会把它撞碎，每次花 10 个金币（高台撞不碎）。右上角的「滑行撞碎」亮起表示可以用。</p>
  <p><b>飞行模式</b> 攒够 50 个金币，<span class="kb">按 <b>F</b> 或</span>点右上角的「飞行」按钮，花 50 个金币获得和金色翅膀一样的 8 秒无敌飞行，还会吸走三条道的金币。</p>
+ <h3>语音鼓励</h3>
+ <p>跑出里程、破纪录、吃到道具、打恶龙、天黑天亮时，小企鹅的教练会用语音给你加油。在设置里可以选 <b>中文</b>、<b>English</b>、<b>双语</b>（先说英文再说中文，屏幕上同时显示两种字幕）或关闭。</p>
  <h3>Boss · 炎翼恶龙</h3>
  <p>每跑 2000 米会遇到恶龙，视角转为横版，企鹅飞在左边，你有 3 颗心。</p>
  <p class="kb">方向键 / <b>WASD</b> 上下前后移动，按住 <b>空格</b>、<b>J</b> 或鼠标左键吐小鱼攻击。</p>
@@ -242,7 +251,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.8.3';
+const VERSION='0.9';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -884,13 +893,13 @@ const KEY={};let mouseFire=false;
 const bossFlying=()=>BOSS.phase==='transIn'||BOSS.phase==='fight'||BOSS.phase==='defeat'||BOSS.phase==='transOut';
 const _w=new THREE.Vector3(),_pc=new THREE.Vector3();
 function bossHP(L){return 30+15*(L-1)}
-function startBoss(){BOSS.phase='warn';BOSS.t=0;banner('恶龙来袭！',`第 ${BOSS.level} 关 · 炎翼恶龙`);sfx('roar');PL.boost=0;if(PL.fly>0){PL.fly=0;PL.invT=1.2}}
+function startBoss(){BOSS.phase='warn';BOSS.t=0;banner('恶龙来袭！',`第 ${BOSS.level} 关 · 炎翼恶龙`);sfx('roar');cheer('warn',null,2);PL.boost=0;if(PL.fly>0){PL.fly=0;PL.invT=1.2}}
 function hearts(){$('hearts').innerHTML=[0,1,2].map(i=>`<i class="${i<BOSS.hearts?'':'off'}">♥</i>`).join('')}
 function shootFireball(aim,spread,spd){DRG.mouth.getWorldPosition(_w);const f=getFB();f.on=true;f.g.visible=true;f.g.position.set(0,_w.y,_w.z);
   f.v.set(0,aim.y-_w.y,aim.z-_w.z).normalize();const a=spread,c=Math.cos(a),s=Math.sin(a);const vy=f.v.y*c-f.v.z*s,vz=f.v.y*s+f.v.z*c;f.v.set(0,vy,vz).multiplyScalar(spd);sfx('fire')}
-function hitPenguin(){if(BOSS.inv>0||G.state!=='run')return;BOSS.hearts--;BOSS.inv=1.6;G.shake=.45;sfx('hurt');hearts();emit(sparks,0,BOSS.py+.6*PEN_S,BOSS.pz,14,3,2,.5,1.8);if(BOSS.hearts<=0)crash('boss')}
-function damageBoss(p){BOSS.hp--;DRG.flash=.12;emit(sparks,p.x,p.y,p.z,8,2.5,2,.4,1.6);sfx('bossHit');$('bossUI').querySelector('b').style.width=Math.max(0,BOSS.hp/BOSS.max*100)+'%';
-  if(BOSS.hp<=0){BOSS.phase='defeat';BOSS.t=0;const bonus=30+20*BOSS.level;G.coins+=bonus;updateHUD();banner('击败恶龙！',`奖励 ${bonus} 金币`);sfx('bossDie');
+function hitPenguin(){if(BOSS.inv>0||G.state!=='run')return;BOSS.hearts--;BOSS.inv=1.6;G.shake=.45;sfx('hurt');hearts();if(BOSS.hearts===1)cheer('last',null,2);else if(BOSS.hearts>1)cheer('hurt');emit(sparks,0,BOSS.py+.6*PEN_S,BOSS.pz,14,3,2,.5,1.8);if(BOSS.hearts<=0)crash('boss')}
+function damageBoss(p){BOSS.hp--;DRG.flash=.12;emit(sparks,p.x,p.y,p.z,8,2.5,2,.4,1.6);sfx('bossHit');$('bossUI').querySelector('b').style.width=Math.max(0,BOSS.hp/BOSS.max*100)+'%';if(BOSS.hp===Math.floor(BOSS.max/2))cheer('half');
+  if(BOSS.hp<=0){BOSS.phase='defeat';BOSS.t=0;const bonus=30+20*BOSS.level;G.coins+=bonus;updateHUD();banner('击败恶龙！',`奖励 ${bonus} 金币`);sfx('bossDie');cheer('win',null,2);
     for(const f of FB){f.on=false;f.g.visible=false}DRG.fallV=4;DRG.splashed=false}}
 function updateDragonAnim(dt){const D=DRG,t=G.t;for(const w of D.wings){w.p.rotation.z=w.sx*(Math.sin(t*4.2)*.65+.15);w.p.rotation.x=Math.sin(t*4.2+1)*.12}
   D.tail.forEach((g,i)=>{g.rotation.y=Math.sin(t*2.2-i*.6)*.18;g.rotation.x=Math.sin(t*1.7-i*.5)*.06});D.neck.forEach((g,i)=>g.rotation.x=Math.sin(t*1.6+i)*.08);
@@ -919,7 +928,7 @@ function updateBoss(dt){
   BOSS.t+=dt;const D=DRG;if(BOSS.inv>0)BOSS.inv-=dt;
   if(BOSS.phase==='warn'){if(BOSS.t>1.2&&!PL.air&&PL.fly<=0){BOSS.phase='transIn';BOSS.t=0;BOSS.py=PL.y;BOSS.pz=0;PL.lane=1}}
   else if(BOSS.phase==='transIn'){BOSS.cam=smooth(0,1,BOSS.t/1.8);BOSS.py=damp(BOSS.py,3.6,2.5,dt);
-    if(BOSS.t>1.8){BOSS.phase='fight';BOSS.t=0;D.root.visible=true;D.root.position.set(0,7,-48);D.root.rotation.set(0,.5,0);BOSS.hp=BOSS.max=bossHP(BOSS.level);BOSS.hearts=3;BOSS.inv=0;
+    if(BOSS.t>1.8){BOSS.phase='fight';BOSS.t=0;cheer('fight');D.root.visible=true;D.root.position.set(0,7,-48);D.root.rotation.set(0,.5,0);BOSS.hp=BOSS.max=bossHP(BOSS.level);BOSS.hearts=3;BOSS.inv=0;
       BOSS.ai={st:'enter',t:0,next:2};hearts();$('hearts').classList.add('on');$('bossUI').classList.add('on');$('bossUI').querySelector('b').style.width='100%';
       $('bossUI').querySelector('.bn').textContent=`炎翼恶龙 · 第 ${BOSS.level} 关`;hint(TOUCH?'拖动屏幕移动 · 自动吐鱼攻击':'方向键 / WASD 移动 · 按住空格吐鱼攻击',3.5);sfx('roar')}}
   else if(BOSS.phase==='fight'){
@@ -1007,6 +1016,54 @@ function musicTick(){if(!AU.ctx||G.state==='paused')return;const c=AU.ctx,fight=
     const pat=[0,2,1,3,2,1,3,2];if(G.state==='run'||st%2===0){const n=ch[pat[st%8]%4]+12+(st%16>11?12:0);tone(mtof(n),t,.35,'triangle',.07,AU.mus)}
     if(G.state==='run'&&st%4===2)noise(t,.06,6000,8000,.05,'highpass',.5);
     AU.next+=spb;AU.step++}}
+/* ---------- voice cheers: browser speech synthesis (no audio files), 中文 / English / 双语 / 关 ---------- */
+const VO={mode:store.get('voice','both'),ok:'speechSynthesis' in window&&'SpeechSynthesisUtterance' in window,voices:{},last:-99,lastK:{},cheerT:0,nextM:100,nextC:50,rec:false,e:null,day:null};
+const LINES={   // [中文, English]; {d} = metres, {c} = coins
+  start:[['出发！向着夕阳奔跑！',"Let's go! Run to the sunset!"],['小企鹅，冲呀！','Go, little penguin, go!'],['准备好了吗？出发！',"Ready? Let's run!"]],
+  m100:[['一百米，好的开始！','One hundred meters. Great start!']],
+  m:[['已经跑了 {d} 米，真厉害！',"{d} meters! You're amazing!"],['{d} 米！继续加油！','{d} meters! Keep it up!'],['{d} 米，越跑越远！','{d} meters. Farther and farther!']],
+  record:[['超过最佳纪录啦！','New record! Keep going!'],['新纪录！你太棒了！',"A new best! You're awesome!"]],
+  combo:[['金币连吃，好棒！','Coin combo! Nice!'],['一串金币全吃到啦！','You got them all!']],
+  coins:[['已经有 {c} 个金币了！','{c} coins! Great job!'],['{c} 个金币，好富有！',"{c} coins! You're rich!"]],
+  boost:[['闪电冲刺！','Lightning dash!'],['冲啊，加速！','Speed up! Zoom!']],
+  fly:[['飞起来啦！','Fly high!'],['金色翅膀，无敌啦！',"Golden wings! You're unstoppable!"]],
+  smash:[['撞碎它！','Smash!'],['力气真大！','So strong!']],
+  launch:[['飞跃！','Big jump!'],['好高呀！','Wow, so high!']],
+  warn:[['恶龙来了，别怕！','Here comes the dragon. Be brave!'],['勇敢的小企鹅，准备战斗！','Brave penguin, get ready!']],
+  fight:[['吐小鱼，打它！','Shoot the fish!']],
+  half:[['恶龙快不行了，加油！','The dragon is getting weak. Keep going!']],
+  hurt:[['坚持住！','Hang in there!'],['小心火球！','Watch out for fireballs!']],
+  last:[['最后一颗心，小心！','Last heart. Be careful!']],
+  win:[['你打败了恶龙，太棒了！','You beat the dragon! Awesome!'],['胜利！你是小英雄！',"Victory! You're a hero!"]],
+  sunset:[['太阳快下山了，好美呀！','The sun is going down. So beautiful!']],
+  night:[['天黑了，看满天的星星！','Night time. Look at the stars!']],
+  dawn:[['天亮啦，新的一天！','Good morning! A new day!']],
+  over:[['没关系，再来一次！',"Nice try! Let's try again!"],['差一点点，下次一定行！','So close! You can do it next time!']],
+  overRec:[['破纪录啦，你真棒！','New best score! Well done!']],
+  overBoss:[['恶龙太凶了，下次打败它！','The dragon was tough. Beat it next time!']]};
+function pickVoices(){const vs=speechSynthesis.getVoices(),best=re=>{const c=vs.filter(v=>re.test(v.lang.replace('_','-')));
+    return c.find(v=>/natural|neural|online/i.test(v.name))||c.find(v=>/xiaoxiao|xiaoyi|tingting|google|samantha|aria|jenny|zira/i.test(v.name))||c.find(v=>v.localService)||c[0]};
+  VO.voices={zh:best(/^zh-(CN|Hans)/i)||best(/^zh/i),en:best(/^en-US/i)||best(/^en/i)}}
+if(VO.ok){pickVoices();speechSynthesis.onvoiceschanged=pickVoices}
+function say(lang,text){const u=new SpeechSynthesisUtterance(text);u.lang=lang==='zh'?'zh-CN':'en-US';if(VO.voices[lang])u.voice=VO.voices[lang];u.rate=lang==='zh'?1.05:.95;u.pitch=1.25;u.volume=1;speechSynthesis.speak(u)}
+const voBusy=()=>VO.ok&&(speechSynthesis.speaking||speechSynthesis.pending);
+// pri 3: settings preview (plays even while paused) · 2: cuts in (start, boss, game over) · 1: skipped while still talking · 0: also needs a quiet gap (combo, jumps)
+function cheer(k,vars,pri=1){if(VO.mode==='off'||pri<3&&(G.state==='paused'||G.state==='title'))return;const now=G.t;
+  if(pri<2&&(voBusy()||now-(VO.lastK[k]??-99)<10||(pri<1&&now-VO.last<6)))return;VO.last=VO.lastK[k]=now;
+  const ls=LINES[k];let[zh,en]=ls[Math.random()*ls.length|0];for(const n in vars||{}){zh=zh.replace('{'+n+'}',vars[n]);en=en.replace('{'+n+'}',vars[n])}
+  const c=$('cheer');c.firstChild.textContent=VO.mode==='zh'?zh:en;c.lastChild.textContent=VO.mode==='both'?zh:'';c.classList.add('on');VO.cheerT=VO.mode==='both'?4:2.6;
+  if(!VO.ok)return;if(pri>=2)speechSynthesis.cancel();if(VO.mode!=='zh')say('en',en);if(VO.mode!=='en')say('zh',zh)}
+function voStop(){if(VO.ok)speechSynthesis.cancel();$('cheer').classList.remove('on');VO.cheerT=0}
+function setVoice(m){VO.mode=m;store.set('voice',m);voStop()}
+function voReset(){Object.assign(VO,{last:-99,lastK:{},nextM:100,nextC:50,rec:false,e:null,day:null})}
+// per-frame checks: distance milestones, passing the best record, coin totals, sunset / night / dawn (held back during the dragon fight)
+function cheerTick(dt){if(VO.cheerT>0){VO.cheerT-=dt;if(VO.cheerT<=0)$('cheer').classList.remove('on')}if(G.state!=='run')return;
+  const d=Math.floor(dist),calm=BOSS.phase==='none';
+  if(d>=VO.nextM){if(calm)cheer(VO.nextM===100?'m100':'m',{d:VO.nextM});VO.nextM=VO.nextM<250?250:VO.nextM<500?500:VO.nextM+500}
+  if(!VO.rec&&G.best.d>=100&&d>G.best.d){VO.rec=true;cheer('record',null,2)}
+  if(G.coins>=VO.nextC){if(calm)cheer('coins',{c:VO.nextC});VO.nextC=VO.nextC<100?100:VO.nextC+100}
+  const e=elevAt(dist);if(VO.e!=null){if(VO.e>=7&&e<7)VO.day='sunset';else if(VO.e>=-4&&e<-4)VO.day='night';else if(VO.e<0&&e>=0)VO.day='dawn'}VO.e=e;
+  if(VO.day&&calm&&!voBusy()){cheer(VO.day);VO.day=null}}
 function setAudio(k,on){AU[k==='music'?'music':'sfxOn']=on;store.set(k,on);if(AU.ctx)(k==='music'?AU.mus:AU.sfx).gain.setTargetAtTime(on?(k==='music'?.28:.8):0,AU.ctx.currentTime,.05)}
 
 /* ======================= game state ======================= */
@@ -1019,7 +1076,7 @@ function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.
   Object.assign(CRV,{k:0,segK:0,segEnd:200,head:0});BEND.value=0;
   Object.assign(PL,{lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0});PG.stars.visible=false;PG.root.visible=true;PG.root.rotation.set(0,0,0);PG.root.scale.setScalar(1);
   for(const d of dolphins){d.on=false;d.m.visible=false}updateHUD(true)}
-function startRun(){initAudio();resetRun();G.state='intro';G.introT=0;sfx('start');$('title').classList.add('hide');$('over').classList.add('hide');$('hud').classList.add('on');document.body.classList.add('running');
+function startRun(){initAudio();resetRun();G.state='intro';G.introT=0;sfx('start');voReset();cheer('start',null,2);$('title').classList.add('hide');$('over').classList.add('hide');$('hud').classList.add('on');document.body.classList.add('running');
   if(COIN)hint('随便跑，把金币都吃掉吧！',3.5);
   else if(SUPER)hint(STYLE==='lr'?'左右换道，躲开冰块和雪人！':'栅栏和断桥要跳，拱门要滑！',3.5);
   else if(!store.get('tutored',false)){hint(TOUCH?'左右滑动换道 · 上滑跳跃 · 下滑滑行':'← → 换道　↑ 跳跃　↓ 滑行',3.5);store.set('tutored',true)}}
@@ -1029,10 +1086,10 @@ function crash(cause){G.state='dead';G.deadT=0;G.cause=cause;PL.boost=0;
   else{G.shake=.6;G.speed=-4.5;sfx('crash');PG.stars.visible=true;emit(puffs,PL.x,.6+PL.y,0,26,3.5,4,.9,2.2)}   // bounce back off the obstacle
   const d=Math.floor(dist),rec=d>G.best.d;if(rec)G.best={d,c:G.coins};store.set('best',G.best);
   $('overTitle').textContent=cause==='water'?'扑通！掉进海里了':cause==='boss'?'被恶龙打败了':'摔倒啦';
-  $('oDist').textContent=d+' m';$('oCoins').textContent=G.coins;$('oBest').textContent=G.best.d+' m';$('newRec').style.display=rec&&d>50?'block':'none'}
-function toTitle(){G.state='title';resetRun();$('over').classList.add('hide');$('pause').classList.add('hide');$('hud').classList.remove('on');$('title').classList.remove('hide');document.body.classList.remove('running');showBest()}
+  cheer(cause==='boss'?'overBoss':rec&&d>50?'overRec':'over',null,2);$('oDist').textContent=d+' m';$('oCoins').textContent=G.coins;$('oBest').textContent=G.best.d+' m';$('newRec').style.display=rec&&d>50?'block':'none'}
+function toTitle(){voStop();G.state='title';resetRun();$('over').classList.add('hide');$('pause').classList.add('hide');$('hud').classList.remove('on');$('title').classList.remove('hide');document.body.classList.remove('running');showBest()}
 function showBest(){$('best').textContent=G.best.d?`最佳纪录 ${G.best.d} m · 金币 ${G.best.c}`:''}
-function setPause(p,silent){if(p&&G.state!=='run')return;if(!p&&G.state!=='paused')return;G.state=p?'paused':'run';G.pausedBySet=!!(p&&silent);$('pause').classList.toggle('hide',!p||!!silent);for(const k in KEY)KEY[k]=false;mouseFire=false}
+function setPause(p,silent){if(p&&G.state!=='run')return;if(!p&&G.state!=='paused')return;G.state=p?'paused':'run';G.pausedBySet=!!(p&&silent);if(p)voStop();$('pause').classList.toggle('hide',!p||!!silent);for(const k in KEY)KEY[k]=false;mouseFire=false}
 let hintT=0;function hint(s,t){$('hint').textContent=s;$('hint').classList.add('on');hintT=t}
 let toastT=0;function toast(s){$('toast').textContent=s;$('toast').classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>$('toast').classList.remove('on'),2200)}
 function banner(t,s){const b=$('banner');b.querySelector('b').textContent=t;b.querySelector('small').textContent=s||'';b.classList.remove('on');void b.offsetWidth;b.classList.add('on')}
@@ -1073,13 +1130,13 @@ $('pauseBtn').onclick=()=>{if(G.state==='run')setPause(true);else if(G.state==='
 addEventListener('blur',()=>setPause(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true)});
 const KEYS_KB=$('keysTxt').innerHTML,KEYS_TOUCH='左右滑动 换道　上滑 跳跃　下滑 肚皮滑行<br>也可以按屏幕下方的按键';applyMode();
 /* ---------- settings panel: difficulty, buttons, trees, quality, music, sfx, screenshot, share ---------- */
-function syncSeg(){const v={level:LEVEL,style:STYLE,pad:PAD?'1':'0',trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0'};
+function syncSeg(){const v={level:LEVEL,style:STYLE,pad:PAD?'1':'0',trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0',voice:VO.mode};
   document.querySelectorAll('.seg[data-k]').forEach(s=>s.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v[s.dataset.k])))}
 function applyQuality(k){if(!QUALITY[k])return;qKey=k;Q=QUALITY[k];store.set('quality',k);prNow=Q.pr;prCeil=Infinity;renderer.setPixelRatio(Q.pr);renderer.setSize(innerWidth,innerHeight);
   sun.shadow.mapSize.set(Q.shadow,Q.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}buildComposer()}
 document.querySelectorAll('.seg[data-k]').forEach(s=>s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=s.dataset.k,v=b.dataset.v;initAudio();
   if(k==='level')setLevel(v);else if(k==='style'){STYLE=v;store.set('style',v);applyMode()}else if(k==='pad'){PAD=v==='1';store.set('pad',PAD);applyPad()}
-  else if(k==='trees'){treeLv=+v;store.set('trees',treeLv);applyTrees()}else if(k==='quality')applyQuality(v);else setAudio(k,v==='1');syncSeg();syncMusicBtn()}));
+  else if(k==='trees'){treeLv=+v;store.set('trees',treeLv);applyTrees()}else if(k==='quality')applyQuality(v);else if(k==='voice'){setVoice(v);if(v!=='off')cheer('start',null,3)}else setAudio(k,v==='1');syncSeg();syncMusicBtn()}));
 syncSeg();
 // panels (参数面板 / 操作说明) pause a running game while open
 const PANELS=['settings','help'];
@@ -1128,7 +1185,7 @@ function updateHUD(force){const d=Math.floor(dist);if(d!==hudD||force){hudD=d;$(
 function updateVertical(dt){const gr=groundAt(PL.x,dist);
   if(PL.fly>0){PL.air=true;PL.vy=0;PL.onKick=false;PL.slideT=0;PL.y=damp(PL.y,FLY_Y,5,dt);return}   // golden-wing flight hovers above everything
   if(!PL.air){
-    if(gr.hole||gr.h<PL.y-.06){PL.air=true;PL.vy=PL.onKick?LAUNCH_V:0;if(PL.onKick){sfx('launch');emit(puffs,PL.x,PL.y,0,14,2.5,2,.6,1.8);PL.slideT=0}}   // ran off a ledge, or off the kicker lip
+    if(gr.hole||gr.h<PL.y-.06){PL.air=true;PL.vy=PL.onKick?LAUNCH_V:0;if(PL.onKick){sfx('launch');cheer('launch',null,0);emit(puffs,PL.x,PL.y,0,14,2.5,2,.6,1.8);PL.slideT=0}}   // ran off a ledge, or off the kicker lip
     else PL.y=gr.h;
     PL.onKick=gr.kick}
   if(PL.air){PL.vy-=GRAV*dt;PL.y+=PL.vy*dt;
@@ -1180,17 +1237,17 @@ function collide(){const ph=PL.slideT>0?.5:1.05,hw=.3,safe=PL.fly>0||PL.invT>0||
     if(PL.y+ph>o.box.y0+.04&&PL.y<o.box.y1){if(PL.slideT>0&&G.coins>=SMASH_COST&&o.box.d<4){smash(o,z);continue}crash('hit');return}}
   for(const c of coins){if(c.got)continue;const z=dist-c.s;
     const near=PL.fly>0?Math.abs(z)<1.4&&Math.abs(PL.x-c.x)<4.6:Math.abs(z)<.7&&Math.abs(PL.x-c.x)<.75&&Math.abs(PL.y+.55-c.y)<.85;   // golden flight pulls in coins from every lane
-    if(near){c.got=true;G.coins++;if(G.t-coinT<.6)coinCombo++;else coinCombo=0;coinT=G.t;sfx('coin');emit(sparks,c.x,c.y,z,9,2.4,2.5,.55,1.6)}}
+    if(near){c.got=true;G.coins++;if(G.t-coinT<.6)coinCombo++;else coinCombo=0;if(coinCombo===10)cheer('combo',null,0);coinT=G.t;sfx('coin');emit(sparks,c.x,c.y,z,9,2.4,2.5,.55,1.6)}}
   for(const it of items){if(it.got)continue;const z=dist-it.s;if(Math.abs(z)<1&&Math.abs(PL.x-it.x)<1&&Math.abs(PL.y+.5-it.y)<1.4){it.got=true;emit(sparks,it.x,it.y,z,22,3,3,.7,2);
-      if(it.type==='boost'){PL.boost=BOOST_T;sfx('boost');hint('⚡ 加速冲刺！',1.6)}else{PL.fly=FLY_T;PL.invT=0;PL.slideT=0;sfx('fly');hint('✦ 无敌飞行！',1.6)}}}}
+      if(it.type==='boost'){PL.boost=BOOST_T;sfx('boost');cheer('boost');hint('⚡ 加速冲刺！',1.6)}else{PL.fly=FLY_T;PL.invT=0;PL.slideT=0;sfx('fly');cheer('fly');hint('✦ 无敌飞行！',1.6)}}}}
 // sliding into a fence / ice / snowman / crates with enough coins breaks it (platforms are too big)
-function smash(o,z){G.coins-=SMASH_COST;o.box=null;o.g.visible=false;G.shake=.25;PL.slideT=Math.max(PL.slideT,.3);sfx('smash');
+function smash(o,z){G.coins-=SMASH_COST;o.box=null;o.g.visible=false;G.shake=.25;PL.slideT=Math.max(PL.slideT,.3);sfx('smash');cheer('smash',null,0);
   emit(puffs,o.x,.9,z,30,4,4,.8,2.4);emit(sparks,o.x,1,z,18,4,4,.6,1.8);hint(`撞碎啦！-${SMASH_COST} 金币`,1.2);updateHUD()}
 const canFly=()=>G.state==='run'&&BOSS.phase==='none'&&bossNext()-dist>260&&PL.fly<=0&&G.coins>=FLY_COST;
 function buyFly(){if(G.state!=='run'||BOSS.phase!=='none'||PL.fly>0)return;
   if(bossNext()-dist<=260){hint('恶龙快来了，先别飞',1.4);return}
   if(G.coins<FLY_COST){hint(`还差 ${FLY_COST-G.coins} 个金币才能飞`,1.4);return}
-  G.coins-=FLY_COST;PL.fly=FLY_T;PL.invT=0;PL.slideT=0;PL.queueSlide=false;sfx('fly');hint(`✦ 飞行模式！-${FLY_COST} 金币`,1.6);updateHUD()}
+  G.coins-=FLY_COST;PL.fly=FLY_T;PL.invT=0;PL.slideT=0;PL.queueSlide=false;sfx('fly');cheer('fly');hint(`✦ 飞行模式！-${FLY_COST} 金币`,1.6);updateHUD()}
 $('flyBtn').addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();initAudio();buyFly()});
 function updateCoins(){for(let i=coins.length-1;i>=0;i--)if(dist-coins[i].s>BEHIND)coins.splice(i,1);let n=0;
   for(const c of coins){if(c.got)continue;const z=dist-c.s;if(z<-260)continue;_q.setFromAxisAngle(_v.set(0,1,0),G.t*3.2+c.ph);_m.compose(_v.set(c.x,c.y+Math.sin(G.t*3+c.ph)*.06,z),_q,_s.set(1,1,1));coinIM.setMatrixAt(n++,_m)}
@@ -1255,7 +1312,7 @@ function step(dt){G.t+=dt;let scroll=0;
     updateObstacles();updateCoins();updateWorld(dt,scroll);updateCamera(dt);updateAtmosphere(dt);
     for(const r of ribbons)updateRibbon(r,Math.min(dt,1/30),G.state==='title'?1.6:G.speed*.9+2,G.t);
     if(G.state==='run'||G.state==='intro')updateHUD()}
-  $('speed').textContent=G.state==='run'&&BOSS.phase==='none'?`${(G.speed*timeScale()*3.6).toFixed(0)} km/h`:'';musicTick();
+  $('speed').textContent=G.state==='run'&&BOSS.phase==='none'?`${(G.speed*timeScale()*3.6).toFixed(0)} km/h`:'';musicTick();cheerTick(dt);
   const bossOn=BOSS.phase!=='none'&&BOSS.phase!=='warn';if(bossOn!==bossCls){bossCls=bossOn;document.body.classList.toggle('boss',bossOn)}
   sky.position.copy(camera.position);gradePass.uniforms.uTime.value=G.t}
 
