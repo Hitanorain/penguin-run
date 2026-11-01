@@ -251,7 +251,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.9';
+const VERSION='0.9.1';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -1017,7 +1017,7 @@ function musicTick(){if(!AU.ctx||G.state==='paused')return;const c=AU.ctx,fight=
     if(G.state==='run'&&st%4===2)noise(t,.06,6000,8000,.05,'highpass',.5);
     AU.next+=spb;AU.step++}}
 /* ---------- voice cheers: browser speech synthesis (no audio files), 中文 / English / 双语 / 关 ---------- */
-const VO={mode:store.get('voice','both'),ok:'speechSynthesis' in window&&'SpeechSynthesisUtterance' in window,voices:{},last:-99,lastK:{},cheerT:0,nextM:100,nextC:50,rec:false,e:null,day:null};
+const VO={mode:store.get('voice','both'),ok:'speechSynthesis' in window&&'SpeechSynthesisUtterance' in window,voices:{},tok:0,loading:false,until:0,out:null,preloaded:false,last:-99,lastK:{},cheerT:0,nextM:100,nextC:50,rec:false,e:null,day:null};
 const LINES={   // [中文, English]; {d} = metres, {c} = coins
   start:[['出发！向着夕阳奔跑！',"Let's go! Run to the sunset!"],['小企鹅，冲呀！','Go, little penguin, go!'],['准备好了吗？出发！',"Ready? Let's run!"]],
   m100:[['一百米，好的开始！','One hundred meters. Great start!']],
@@ -1046,22 +1046,36 @@ function pickVoices(){const vs=speechSynthesis.getVoices(),best=re=>{const c=vs.
   VO.voices={zh:best(/^zh-(CN|Hans)/i)||best(/^zh/i),en:best(/^en-US/i)||best(/^en/i)}}
 if(VO.ok){pickVoices();speechSynthesis.onvoiceschanged=pickVoices}
 function say(lang,text){const u=new SpeechSynthesisUtterance(text);u.lang=lang==='zh'?'zh-CN':'en-US';if(VO.voices[lang])u.voice=VO.voices[lang];u.rate=lang==='zh'?1.05:.95;u.pitch=1.25;u.volume=1;speechSynthesis.speak(u)}
-const voBusy=()=>VO.ok&&(speechSynthesis.speaking||speechSynthesis.pending);
+// Azure 预生成的录音 voice/<lang>-<fnv>.mp3（tools/make-voice.ps1：中文晓晓、英文 Jenny）；取不到时（直接双击打开、超出生成范围的里程）改用设备语音
+const fnv=s=>{let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0}return h.toString(16).padStart(8,'0')};
+const CLIP={};
+function clip(lang,text){if(!AU.ctx)return Promise.resolve(null);const k=lang+'-'+fnv(text);
+  return CLIP[k]??=fetch('voice/'+k+'.mp3').then(r=>r.ok?r.arrayBuffer():null).then(b=>b&&new Promise((ok,no)=>AU.ctx.decodeAudioData(b,ok,no))).catch(()=>null)}
+const fill=(s,vars)=>{for(const n in vars||{})s=s.replace('{'+n+'}',vars[n]);return s};
+function voPrefetch(k,vars){for(const[zh,en]of LINES[k]){clip('zh',fill(zh,vars));clip('en',fill(en,vars))}}
+function voPreload(){for(const k in LINES)if(!LINES[k][0][0].includes('{'))voPrefetch(k)}
+let voSrc=[];
+function voCut(){VO.tok++;VO.loading=false;VO.until=0;for(const s of voSrc)try{s.stop()}catch(e){}voSrc=[];if(VO.ok)speechSynthesis.cancel()}
+async function speak(parts){const tok=++VO.tok;VO.loading=true;const bufs=await Promise.all(parts.map(([l,t])=>clip(l,t)));if(tok!==VO.tok)return;VO.loading=false;
+  if(bufs.some(b=>!b)){if(VO.ok)for(const[l,t]of parts)say(l,t);return}
+  const c=AU.ctx;if(!VO.out){VO.out=c.createGain();VO.out.gain.value=1;VO.out.connect(AU.master)}let t=c.currentTime+.03;
+  for(const b of bufs){const s=c.createBufferSource();s.buffer=b;s.connect(VO.out);s.start(t);voSrc.push(s);t+=b.duration+.25}VO.until=t;VO.cheerT=Math.max(VO.cheerT,t-c.currentTime+.4)}
+const voBusy=()=>VO.loading||(AU.ctx&&AU.ctx.currentTime<VO.until)||VO.ok&&(speechSynthesis.speaking||speechSynthesis.pending);
 // pri 3: settings preview (plays even while paused) · 2: cuts in (start, boss, game over) · 1: skipped while still talking · 0: also needs a quiet gap (combo, jumps)
 function cheer(k,vars,pri=1){if(VO.mode==='off'||pri<3&&(G.state==='paused'||G.state==='title'))return;const now=G.t;
   if(pri<2&&(voBusy()||now-(VO.lastK[k]??-99)<10||(pri<1&&now-VO.last<6)))return;VO.last=VO.lastK[k]=now;
-  const ls=LINES[k];let[zh,en]=ls[Math.random()*ls.length|0];for(const n in vars||{}){zh=zh.replace('{'+n+'}',vars[n]);en=en.replace('{'+n+'}',vars[n])}
+  const ls=LINES[k],p=ls[Math.random()*ls.length|0],zh=fill(p[0],vars),en=fill(p[1],vars);
   const c=$('cheer');c.firstChild.textContent=VO.mode==='zh'?zh:en;c.lastChild.textContent=VO.mode==='both'?zh:'';c.classList.add('on');VO.cheerT=VO.mode==='both'?4:2.6;
-  if(!VO.ok)return;if(pri>=2)speechSynthesis.cancel();if(VO.mode!=='zh')say('en',en);if(VO.mode!=='en')say('zh',zh)}
-function voStop(){if(VO.ok)speechSynthesis.cancel();$('cheer').classList.remove('on');VO.cheerT=0}
-function setVoice(m){VO.mode=m;store.set('voice',m);voStop()}
-function voReset(){Object.assign(VO,{last:-99,lastK:{},nextM:100,nextC:50,rec:false,e:null,day:null})}
+  voCut();speak(VO.mode==='zh'?[['zh',zh]]:VO.mode==='en'?[['en',en]]:[['en',en],['zh',zh]])}
+function voStop(){voCut();$('cheer').classList.remove('on');VO.cheerT=0}
+function setVoice(m){VO.mode=m;store.set('voice',m);voStop();if(m!=='off'&&!VO.preloaded&&AU.ctx){VO.preloaded=true;voPreload()}}
+function voReset(){Object.assign(VO,{last:-99,lastK:{},nextM:100,nextC:50,rec:false,e:null,day:null});if(!VO.preloaded&&AU.ctx&&VO.mode!=='off'){VO.preloaded=true;voPreload()}voPrefetch('coins',{c:50})}
 // per-frame checks: distance milestones, passing the best record, coin totals, sunset / night / dawn (held back during the dragon fight)
 function cheerTick(dt){if(VO.cheerT>0){VO.cheerT-=dt;if(VO.cheerT<=0)$('cheer').classList.remove('on')}if(G.state!=='run')return;
   const d=Math.floor(dist),calm=BOSS.phase==='none';
-  if(d>=VO.nextM){if(calm)cheer(VO.nextM===100?'m100':'m',{d:VO.nextM});VO.nextM=VO.nextM<250?250:VO.nextM<500?500:VO.nextM+500}
+  if(d>=VO.nextM){if(calm)cheer(VO.nextM===100?'m100':'m',{d:VO.nextM});VO.nextM=VO.nextM<250?250:VO.nextM<500?500:VO.nextM+500;voPrefetch('m',{d:VO.nextM})}
   if(!VO.rec&&G.best.d>=100&&d>G.best.d){VO.rec=true;cheer('record',null,2)}
-  if(G.coins>=VO.nextC){if(calm)cheer('coins',{c:VO.nextC});VO.nextC=VO.nextC<100?100:VO.nextC+100}
+  if(G.coins>=VO.nextC){if(calm)cheer('coins',{c:VO.nextC});VO.nextC=VO.nextC<100?100:VO.nextC+100;voPrefetch('coins',{c:VO.nextC})}
   const e=elevAt(dist);if(VO.e!=null){if(VO.e>=7&&e<7)VO.day='sunset';else if(VO.e>=-4&&e<-4)VO.day='night';else if(VO.e<0&&e>=0)VO.day='dawn'}VO.e=e;
   if(VO.day&&calm&&!voBusy()){cheer(VO.day);VO.day=null}}
 function setAudio(k,on){AU[k==='music'?'music':'sfxOn']=on;store.set(k,on);if(AU.ctx)(k==='music'?AU.mus:AU.sfx).gain.setTargetAtTime(on?(k==='music'?.28:.8):0,AU.ctx.currentTime,.05)}
