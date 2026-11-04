@@ -21,10 +21,15 @@ function Get-Fnv([string]$s) {
   '{0:x8}' -f $h
 }
 
-# ---------- 从 index.html 读出 LINES ----------
+# ---------- 从 index.html 读出 LINES（语音鼓励）和 LEARN（学习短句，语速放慢，方便小朋友跟读） ----------
 $html = [IO.File]::ReadAllText((Join-Path $root 'index.html'), [Text.Encoding]::UTF8)
-if ($html -notmatch '(?s)const LINES=\{(.+?)\};') { throw 'LINES not found in index.html' }
 $want = @{}
+$Sets = @(
+  @{ name = 'LINES'; rate = @{ zh = '0%'; en = '-5%' } },
+  @{ name = 'LEARN'; rate = @{ zh = '-8%'; en = '-15%' } }
+)
+foreach ($set in $Sets) {
+if ($html -notmatch "(?s)const $($set.name)=\{(.+?)\};") { throw "$($set.name) not found in index.html" }
 foreach ($m in [regex]::Matches($Matches[1], "\['([^']*)',\s*(?:""([^""]*)""|'([^']*)')\]")) {
   $pair = @{ zh = $m.Groups[1].Value; en = $(if ($m.Groups[2].Success) { $m.Groups[2].Value } else { $m.Groups[3].Value }) }
   foreach ($lang in 'zh', 'en') {
@@ -32,8 +37,9 @@ foreach ($m in [regex]::Matches($Matches[1], "\['([^']*)',\s*(?:""([^""]*)""|'([
     $texts = if ($t.Contains('{d}')) { $Dists | ForEach-Object { $t.Replace('{d}', "$_") } }
              elseif ($t.Contains('{c}')) { $Coins | ForEach-Object { $t.Replace('{c}', "$_") } }
              else { @($t) }
-    foreach ($x in $texts) { $want["$lang-$(Get-Fnv $x)"] = @{ text = $x; lang = $lang } }
+    foreach ($x in $texts) { $want["$lang-$(Get-Fnv $x)"] = @{ text = $x; lang = $lang; rate = $set.rate[$lang] } }
   }
+}
 }
 Write-Host "clips: $($want.Count)"
 
@@ -43,7 +49,7 @@ Write-Host "to generate: $($todo.Count)"
 $n = 0; $failed = 0
 foreach ($k in $todo) {
   $w = $want[$k]; $v = $Voices[$w.lang]; $n++
-  $ok = Invoke-Tts -Text $w.text -Voice $v.voice -Style $v.style -Lang $v.lang -Rate $v.rate -OutFile (Join-Path $out "$k.mp3")
+  $ok = Invoke-Tts -Text $w.text -Voice $v.voice -Style $v.style -Lang $v.lang -Rate $w.rate -OutFile (Join-Path $out "$k.mp3")
   if (-not $ok) { $failed++ }
   if ($n % 20 -eq 0) { Write-Host "  $n / $($todo.Count)" }
 }

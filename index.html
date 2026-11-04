@@ -150,6 +150,10 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
 #cheer{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 74px);transform:translateX(-50%);max-width:88vw;text-align:center;display:flex;flex-direction:column;gap:3px;opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;text-shadow:0 2px 12px rgba(60,0,20,.75)}
 #cheer b{font-size:clamp(17px,2.6vw,24px);font-weight:800;letter-spacing:.05em;color:#fff2d8}
 #cheer span{font-size:14px;letter-spacing:.14em;color:#ffd6a8}#cheer span:empty{display:none}
+#cheer.learn b{font-size:clamp(20px,3.2vw,30px);color:#fff;letter-spacing:.03em}
+#learnBox{width:100%;margin-top:10px;display:flex;flex-direction:column;align-items:center;gap:6px}#learnBox .lh{font-size:12px;letter-spacing:.14em;color:#ffd6a8;opacity:.85}
+#learnList{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:min(440px,82vw);max-height:28vh;overflow:auto}
+.lrn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 13px;border-radius:12px;text-align:left;letter-spacing:.02em}.lrn b{font-size:15px;color:#fff2d8}.lrn small{font-size:12px;color:#ffd6a8;opacity:.85}
 #cheer.on{opacity:1;transform:translateX(-50%) translateY(4px)}
 @media (max-width:760px){#cheer{top:calc(env(safe-area-inset-top,0px) + 108px)}}
 @media (max-height:480px){#title h1{font-size:44px}#title{gap:10px;padding-top:16px;padding-bottom:16px}.keys{display:none}#dist b{font-size:24px}#over .card{padding:16px 24px}#over h2{font-size:26px}}
@@ -197,6 +201,7 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <div class="opt"><span>音乐</span><div class="seg" data-k="music"><button data-v="1">开</button><button data-v="0">关</button></div></div>
  <div class="opt"><span>音效</span><div class="seg" data-k="sfx"><button data-v="1">开</button><button data-v="0">关</button></div></div>
  <div class="opt"><span>语音鼓励</span><div class="seg" data-k="voice"><button data-v="zh">中文</button><button data-v="en">English</button><button data-v="both">双语</button><button data-v="off">关</button></div></div>
+ <div class="opt"><span>学习短句</span><div class="seg" data-k="learn"><button data-v="more">多</button><button data-v="less">少</button><button data-v="off">关</button></div></div>
  <button id="setClose" class="big">继续</button>
 </div></div>
 <div id="help" class="screen hide"><div class="card glass">
@@ -208,6 +213,8 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <p><b>吃金币</b> 没有任何障碍、断桥和恶龙，永远不会摔倒，只管换道、跳跃去吃金币；想结束时按暂停，再点「回到标题」。</p>
  <p><b>超简单</b> 跑得最慢、没有恶龙，而且只用一种操作：<b>只左右</b> 时只出现冰块、雪人、木箱，换道躲开就行（点屏幕左半边/右半边也能换道）；<b>只跳滑</b> 时企鹅一直在中间跑道，只出现栅栏、断桥（要跳）和拱门（要滑），点一下屏幕就是跳。</p>
  <p>红白栅栏可以跳过；“冲鸭！”拱门要滑过去；冰块、雪人、木箱只能换道躲开。断桥要及时起跳，高台可以跑上坡道或直接跳上去，跳台会把你弹飞越过断桥。</p>
+ <h3>学习短句</h3>
+ <p>小企鹅会用简单的中英文短句说出眼前的东西和刚做的动作（“Look! A snowman!”“I can jump!”），飞行时说长一点的句子。摔倒后结算页会列出这一局听到的句子，点一下可以再听。设置里可以调成「多」「少」或「关」；「语音鼓励」选的语言也决定短句用哪种语言。</p>
  <h3>道具</h3>
  <p>⚡ <b>蓝色闪电</b> 加速冲刺 5 秒，速度提升到 1.5 倍（不无敌，小心障碍）。<br>✦ <b>金色翅膀</b> 无敌飞行 8 秒，全身金光，不会撞到障碍也不会落海，还会吸走附近三条道的金币。</p>
  <h3>金币能力</h3>
@@ -236,6 +243,7 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <div class="stat"><span>奔跑距离</span><b id="oDist">0 m</b></div>
  <div class="stat"><span>金币</span><b id="oCoins">0</b></div>
  <div class="stat"><span>最佳纪录</span><b id="oBest">0 m</b></div>
+ <div id="learnBox"><div class="lh">这一局学的话 · 点一下再听</div><div id="learnList"></div></div>
  <div class="row"><button id="againBtn" class="big">再跑一次</button><button id="homeBtn">回到标题</button></div>
 </div></div>
 <div id="pause" class="screen hide"><h2>已暂停</h2><button id="resumeBtn" class="big">继续</button><button id="pauseHome">回到标题</button></div>
@@ -251,7 +259,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.9.1';
+const VERSION='0.10';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -899,7 +907,7 @@ function shootFireball(aim,spread,spd){DRG.mouth.getWorldPosition(_w);const f=ge
   f.v.set(0,aim.y-_w.y,aim.z-_w.z).normalize();const a=spread,c=Math.cos(a),s=Math.sin(a);const vy=f.v.y*c-f.v.z*s,vz=f.v.y*s+f.v.z*c;f.v.set(0,vy,vz).multiplyScalar(spd);sfx('fire')}
 function hitPenguin(){if(BOSS.inv>0||G.state!=='run')return;BOSS.hearts--;BOSS.inv=1.6;G.shake=.45;sfx('hurt');hearts();if(BOSS.hearts===1)cheer('last',null,2);else if(BOSS.hearts>1)cheer('hurt');emit(sparks,0,BOSS.py+.6*PEN_S,BOSS.pz,14,3,2,.5,1.8);if(BOSS.hearts<=0)crash('boss')}
 function damageBoss(p){BOSS.hp--;DRG.flash=.12;emit(sparks,p.x,p.y,p.z,8,2.5,2,.4,1.6);sfx('bossHit');$('bossUI').querySelector('b').style.width=Math.max(0,BOSS.hp/BOSS.max*100)+'%';if(BOSS.hp===Math.floor(BOSS.max/2))cheer('half');
-  if(BOSS.hp<=0){BOSS.phase='defeat';BOSS.t=0;const bonus=30+20*BOSS.level;G.coins+=bonus;updateHUD();banner('击败恶龙！',`奖励 ${bonus} 金币`);sfx('bossDie');cheer('win',null,2);
+  if(BOSS.hp<=0){BOSS.phase='defeat';BOSS.t=0;const bonus=30+20*BOSS.level;G.coins+=bonus;updateHUD();banner('击败恶龙！',`奖励 ${bonus} 金币`);sfx('bossDie');cheer('win',null,2);VO.brave=true;
     for(const f of FB){f.on=false;f.g.visible=false}DRG.fallV=4;DRG.splashed=false}}
 function updateDragonAnim(dt){const D=DRG,t=G.t;for(const w of D.wings){w.p.rotation.z=w.sx*(Math.sin(t*4.2)*.65+.15);w.p.rotation.x=Math.sin(t*4.2+1)*.12}
   D.tail.forEach((g,i)=>{g.rotation.y=Math.sin(t*2.2-i*.6)*.18;g.rotation.x=Math.sin(t*1.7-i*.5)*.06});D.neck.forEach((g,i)=>g.rotation.x=Math.sin(t*1.6+i)*.08);
@@ -1017,7 +1025,7 @@ function musicTick(){if(!AU.ctx||G.state==='paused')return;const c=AU.ctx,fight=
     if(G.state==='run'&&st%4===2)noise(t,.06,6000,8000,.05,'highpass',.5);
     AU.next+=spb;AU.step++}}
 /* ---------- voice cheers: browser speech synthesis (no audio files), 中文 / English / 双语 / 关 ---------- */
-const VO={mode:store.get('voice','both'),ok:'speechSynthesis' in window&&'SpeechSynthesisUtterance' in window,voices:{},tok:0,loading:false,until:0,out:null,preloaded:false,last:-99,lastK:{},cheerT:0,nextM:100,nextC:50,rec:false,e:null,day:null};
+const VO={mode:store.get('voice','both'),ok:'speechSynthesis' in window&&'SpeechSynthesisUtterance' in window,voices:{},tok:0,loading:false,until:0,out:null,preloaded:false,last:-99,lastK:{},cheerT:0,nextM:100,nextC:50,rec:false,e:null,day:null,li:{},lastL:-99,heard:[],act:null,brave:false,wings:false};
 const LINES={   // [中文, English]; {d} = metres, {c} = coins
   start:[['出发！向着夕阳奔跑！',"Let's go! Run to the sunset!"],['小企鹅，冲呀！','Go, little penguin, go!'],['准备好了吗？出发！',"Ready? Let's run!"]],
   m100:[['一百米，好的开始！','One hundred meters. Great start!']],
@@ -1041,6 +1049,44 @@ const LINES={   // [中文, English]; {d} = metres, {c} = coins
   over:[['没关系，再来一次！',"Nice try! Let's try again!"],['差一点点，下次一定行！','So close! You can do it next time!']],
   overRec:[['破纪录啦，你真棒！','New best score! Well done!']],
   overBoss:[['恶龙太凶了，下次打败它！','The dragon was tough. Beat it next time!']]};
+// 学习短句（v0.10）：RAZ AA 级的短句型（I see a… / Look! A… / I can… / The … is …），只说屏幕上正在发生的事；飞行时安全，说长一点的句子
+const LEARN={
+  snowman:[['看，一个雪人！','Look! A snowman!'],['我看到一个雪人。','I see a snowman.'],['雪人好大呀！','The snowman is big!']],
+  ice:[['看，大冰块！','Look! Big ice!'],['冰块是蓝色的。','The ice is blue.'],['冰块好冷呀！','The ice is cold!']],
+  crates:[['看，箱子！','Look! Boxes!'],['一、二、三，三个箱子！','One, two, three boxes!'],['箱子是棕色的。','The boxes are brown.']],
+  fence:[['跳过栅栏！','Jump over the fence!'],['红白色的栅栏。','A red and white fence.'],['准备，跳！','Ready, jump!']],
+  gate:[['从下面滑过去！','Slide under!'],['趴下来！','Get down!'],['我从下面钻过去。','I go under.']],
+  gap:[['小心，有个洞！','Look out! A hole!'],['跳！跳过去！','Jump! Jump over!'],["别掉进水里！","Don't fall in the water!"]],
+  plat:[['跳上去！','Jump up!'],['上去，再下来！','Up and down!']],
+  kicker:[['往上冲，飞起来！','Up, up, up!']],
+  dolphin:[['看，海豚！','Look! A dolphin!'],['你好，海豚！','Hello, dolphin!'],['海豚会跳！','Dolphins can jump!'],['海豚会游泳。','Dolphins can swim.']],
+  house:[['看，一座小房子！','Look! A little house!'],['我看到一座房子。','I see a house.']],
+  jump:[['跳！','Jump!'],['我会跳！','I can jump!'],['跳得好高！','Up high!']],
+  slide:[['滑！','Slide!'],['我会滑！','I can slide!']],
+  left:[['左边！','Left!'],['往左走！','Go left!']],
+  right:[['右边！','Right!'],['往右走！','Go right!']],
+  coin:[['黄色的金币！','Yellow coins!'],['我喜欢金币！','I like coins!']],
+  fly:[['我会飞啦！我在天上！','I can fly! I am in the sky!'],['往下看，我看到大海！','Look down! I see the sea!'],["企鹅不会飞，可是我会！","Penguins can't fly. But I can!"],['飞呀飞，飞得好高！','Up, up, up! I am so high!'],['我像小鸟一样飞！','I fly like a bird!']],
+  thanks:[['谢谢你，金翅膀！','Thank you, golden wings!']],
+  sun:[['我看到太阳！','I see the sun!'],['太阳好亮呀！','The sun is bright!']],
+  morning:[['早上好，太阳！','Good morning, sun!']],
+  evening:[['太阳要下山了。','The sun is going down.'],['晚安，太阳！','Good night, sun!']],
+  night:[['我看到星星！','I see stars!'],['一闪一闪亮晶晶！','Twinkle, twinkle!'],['天黑了。','It is dark.']],
+  cold:[['好冷呀，哆嗦嗦！','Brr! I am cold!']],
+  hungry:[['我饿了，我想吃鱼！','I am hungry. I want fish!']],
+  tired:[['我有点累，但我能行！','I am tired. But I can do it!']],
+  brave:[['我好勇敢！','I am brave!'],['我好强壮！','I am strong!']],
+  sea:[['看，大海！','Look at the sea!'],['大海好大呀！','The sea is big!']],
+  birds:[['天上有小鸟！','Birds in the sky!'],['小鸟会飞。','Birds can fly.']],
+  trees:[['我看到大树。','I see trees.'],['大树好高呀！','The trees are tall!']],
+  snow:[['雪是白色的。','The snow is white.'],['我喜欢雪！','I like snow!']],
+  iceberg:[['看，冰山！','Look! An iceberg!']],
+  me:[['我是一只小企鹅！','I am a penguin!'],['我喜欢跑步！','I like to run!'],['我好开心！','I am happy!'],['跑呀跑呀跑！','Run, run, run!'],['我跑得好快！','I am fast!']],
+  facts:[['企鹅会游泳。','Penguins can swim.'],['企鹅喜欢吃鱼。','Penguins like fish.'],['企鹅住在冰雪上。','Penguins live on the ice.']]};
+const LEARN_OB={snowman:'snowman',ice:'ice',crates:'crates',fence:'fence',gate1:'gate',gate3:'gate',plat:'plat',platR:'plat',kicker:'kicker'};
+const LEARN_CD={jump:25,slide:25,left:25,right:25,coin:40,fly:3,thanks:3,sun:90,morning:90,evening:90,night:90,cold:120,hungry:1e4,tired:1e4,brave:1e4};   // seconds before the same topic again (default 30)
+const LEARN_IDLE=['sea','birds','trees','snow','iceberg','me','facts'],LEARN_GAP={more:8,less:18};
+let LEARN_LV=store.get('learn','more');if(!LEARN_GAP[LEARN_LV])LEARN_LV=LEARN_LV==='off'?'off':'more';
 function pickVoices(){const vs=speechSynthesis.getVoices(),best=re=>{const c=vs.filter(v=>re.test(v.lang.replace('_','-')));
     return c.find(v=>/natural|neural|online/i.test(v.name))||c.find(v=>/xiaoxiao|xiaoyi|tingting|google|samantha|aria|jenny|zira/i.test(v.name))||c.find(v=>v.localService)||c[0]};
   VO.voices={zh:best(/^zh-(CN|Hans)/i)||best(/^zh/i),en:best(/^en-US/i)||best(/^en/i)}}
@@ -1053,7 +1099,7 @@ function clip(lang,text){if(!AU.ctx)return Promise.resolve(null);const k=lang+'-
   return CLIP[k]??=fetch('voice/'+k+'.mp3').then(r=>r.ok?r.arrayBuffer():null).then(b=>b&&new Promise((ok,no)=>AU.ctx.decodeAudioData(b,ok,no))).catch(()=>null)}
 const fill=(s,vars)=>{for(const n in vars||{})s=s.replace('{'+n+'}',vars[n]);return s};
 function voPrefetch(k,vars){for(const[zh,en]of LINES[k]){clip('zh',fill(zh,vars));clip('en',fill(en,vars))}}
-function voPreload(){for(const k in LINES)if(!LINES[k][0][0].includes('{'))voPrefetch(k)}
+function voPreload(){for(const k in LINES)if(!LINES[k][0][0].includes('{'))voPrefetch(k);for(const k in LEARN)for(const[zh,en]of LEARN[k]){clip('zh',zh);clip('en',en)}}
 let voSrc=[];
 function voCut(){VO.tok++;VO.loading=false;VO.until=0;for(const s of voSrc)try{s.stop()}catch(e){}voSrc=[];if(VO.ok)speechSynthesis.cancel()}
 async function speak(parts){const tok=++VO.tok;VO.loading=true;const bufs=await Promise.all(parts.map(([l,t])=>clip(l,t)));if(tok!==VO.tok)return;VO.loading=false;
@@ -1064,12 +1110,39 @@ const voBusy=()=>VO.loading||(AU.ctx&&AU.ctx.currentTime<VO.until)||VO.ok&&(spee
 // pri 3: settings preview (plays even while paused) · 2: cuts in (start, boss, game over) · 1: skipped while still talking · 0: also needs a quiet gap (combo, jumps)
 function cheer(k,vars,pri=1){if(VO.mode==='off'||pri<3&&(G.state==='paused'||G.state==='title'))return;const now=G.t;
   if(pri<2&&(voBusy()||now-(VO.lastK[k]??-99)<10||(pri<1&&now-VO.last<6)))return;VO.last=VO.lastK[k]=now;
-  const ls=LINES[k],p=ls[Math.random()*ls.length|0],zh=fill(p[0],vars),en=fill(p[1],vars);
-  const c=$('cheer');c.firstChild.textContent=VO.mode==='zh'?zh:en;c.lastChild.textContent=VO.mode==='both'?zh:'';c.classList.add('on');VO.cheerT=VO.mode==='both'?4:2.6;
+  const ls=LINES[k],p=ls[Math.random()*ls.length|0];voLine(fill(p[0],vars),fill(p[1],vars))}
+// show the subtitle and speak one [中文, English] pair in the chosen language(s); learn = a learning sentence (bigger English subtitle)
+function voLine(zh,en,learn){const c=$('cheer');c.classList.toggle('learn',!!learn);c.firstChild.textContent=VO.mode==='zh'?zh:en;c.lastChild.textContent=VO.mode==='both'?zh:'';c.classList.add('on');VO.cheerT=VO.mode==='both'?4:2.6;
   voCut();speak(VO.mode==='zh'?[['zh',zh]]:VO.mode==='en'?[['en',en]]:[['en',en],['zh',zh]])}
+// learning sentences: each topic cycles through its lines (across runs too), and every line heard this run goes into the review list on the game-over card
+function learnSay(k){const ls=LEARN[k],i=VO.li[k]=((VO.li[k]??Math.random()*ls.length|0)+1)%ls.length,[zh,en]=ls[i];
+  VO.last=VO.lastL=VO.lastK['L:'+k]=G.t;if(!VO.heard.some(p=>p[1]===en))VO.heard.push([zh,en]);voLine(zh,en,true)}
+// picks what to say: flight lines while flying; otherwise, once the gap has passed, what the child just did > what is coming up ahead > dolphins / cabins > coins > time of day > idle chat
+function learnTick(){if(VO.mode==='off'||LEARN_LV==='off'||BOSS.phase!=='none'||voBusy())return;const t=G.t;if(t-VO.last<2.5)return;
+  const ok=k=>t-(VO.lastK['L:'+k]??-99)>=(LEARN_CD[k]??30);
+  if(PL.fly>0){if(PL.fly>2&&t-VO.lastL>3){if(VO.wings){VO.wings=false;learnSay('thanks')}else if(ok('fly'))learnSay('fly')}return}
+  if(t-VO.lastL<LEARN_GAP[LEARN_LV])return;
+  if(VO.brave){VO.brave=false;return learnSay('brave')}
+  const a=VO.act;if(a&&t-a.t<.4&&ok(a.k))return learnSay(a.k);
+  let best=null,bz=-1e9;const see=(k,z)=>{if(z>=-34&&z<=-12&&z>bz&&ok(k)){bz=z;best=k}};
+  for(const o of obstacles){const k=LEARN_OB[o.type];if(k)see(k,dist-o.s)}
+  for(const h of holes)if(!kickers.some(q=>Math.abs(q.s1-h.s0)<.5))see('gap',dist-h.s0);
+  if(best)return learnSay(best);
+  if(ok('dolphin'))for(const d of dolphins)if(d.on&&d.t>0){const z=dist-d.s;if(z>-50&&z<-4)return learnSay('dolphin')}
+  if(ok('house'))for(const c of cabins){const z=dist-c.s;if(z>-70&&z<-15)return learnSay('house')}
+  if(t-coinT<.4&&ok('coin'))return learnSay('coin');
+  const e=elevAt(dist),am=amAt(dist)>.5;
+  const sit=dist>600&&ok('hungry')?'hungry':dist>1500&&ok('tired')?'tired':e<-4?(ok('night')?'night':ok('cold')?'cold':null):am&&e>0&&e<15?(ok('morning')?'morning':null):!am&&e<12?(ok('evening')?'evening':null):e>25&&ok('sun')?'sun':null;
+  if(sit)return learnSay(sit);
+  if(t-VO.lastL<LEARN_GAP[LEARN_LV]+2)return;
+  const idle=LEARN_IDLE.filter(ok);if(idle.length)learnSay(idle[Math.random()*idle.length|0])}
+// game-over card: the sentences heard this run (latest 8), tap one to hear it again
+function showLearned(){const L=$('learnList');L.textContent='';const hs=VO.heard.slice(-8);$('learnBox').style.display=hs.length?'':'none';
+  for(const[zh,en]of hs){const b=document.createElement('button');b.className='lrn';b.innerHTML='<b></b><small></small>';b.firstChild.textContent=en;b.lastChild.textContent=zh;
+    b.onclick=()=>{initAudio();b.blur();voLine(zh,en,true)};L.appendChild(b)}}
 function voStop(){voCut();$('cheer').classList.remove('on');VO.cheerT=0}
 function setVoice(m){VO.mode=m;store.set('voice',m);voStop();if(m!=='off'&&!VO.preloaded&&AU.ctx){VO.preloaded=true;voPreload()}}
-function voReset(){Object.assign(VO,{last:-99,lastK:{},nextM:100,nextC:50,rec:false,e:null,day:null});if(!VO.preloaded&&AU.ctx&&VO.mode!=='off'){VO.preloaded=true;voPreload()}voPrefetch('coins',{c:50})}
+function voReset(){Object.assign(VO,{last:-99,lastK:{},nextM:100,nextC:50,rec:false,e:null,day:null,lastL:-99,heard:[],act:null,brave:false,wings:false});if(!VO.preloaded&&AU.ctx&&VO.mode!=='off'){VO.preloaded=true;voPreload()}voPrefetch('coins',{c:50})}
 // per-frame checks: distance milestones, passing the best record, coin totals, sunset / night / dawn (held back during the dragon fight)
 function cheerTick(dt){if(VO.cheerT>0){VO.cheerT-=dt;if(VO.cheerT<=0)$('cheer').classList.remove('on')}if(G.state!=='run')return;
   const d=Math.floor(dist),calm=BOSS.phase==='none';
@@ -1077,7 +1150,8 @@ function cheerTick(dt){if(VO.cheerT>0){VO.cheerT-=dt;if(VO.cheerT<=0)$('cheer').
   if(!VO.rec&&G.best.d>=100&&d>G.best.d){VO.rec=true;cheer('record',null,2)}
   if(G.coins>=VO.nextC){if(calm)cheer('coins',{c:VO.nextC});VO.nextC=VO.nextC<100?100:VO.nextC+100;voPrefetch('coins',{c:VO.nextC})}
   const e=elevAt(dist);if(VO.e!=null){if(VO.e>=7&&e<7)VO.day='sunset';else if(VO.e>=-4&&e<-4)VO.day='night';else if(VO.e<0&&e>=0)VO.day='dawn'}VO.e=e;
-  if(VO.day&&calm&&!voBusy()){cheer(VO.day);VO.day=null}}
+  if(VO.day&&calm&&!voBusy()){cheer(VO.day);VO.day=null}
+  learnTick()}
 function setAudio(k,on){AU[k==='music'?'music':'sfxOn']=on;store.set(k,on);if(AU.ctx)(k==='music'?AU.mus:AU.sfx).gain.setTargetAtTime(on?(k==='music'?.28:.8):0,AU.ctx.currentTime,.05)}
 
 /* ======================= game state ======================= */
@@ -1100,7 +1174,7 @@ function crash(cause){G.state='dead';G.deadT=0;G.cause=cause;PL.boost=0;
   else{G.shake=.6;G.speed=-4.5;sfx('crash');PG.stars.visible=true;emit(puffs,PL.x,.6+PL.y,0,26,3.5,4,.9,2.2)}   // bounce back off the obstacle
   const d=Math.floor(dist),rec=d>G.best.d;if(rec)G.best={d,c:G.coins};store.set('best',G.best);
   $('overTitle').textContent=cause==='water'?'扑通！掉进海里了':cause==='boss'?'被恶龙打败了':'摔倒啦';
-  cheer(cause==='boss'?'overBoss':rec&&d>50?'overRec':'over',null,2);$('oDist').textContent=d+' m';$('oCoins').textContent=G.coins;$('oBest').textContent=G.best.d+' m';$('newRec').style.display=rec&&d>50?'block':'none'}
+  cheer(cause==='boss'?'overBoss':rec&&d>50?'overRec':'over',null,2);$('oDist').textContent=d+' m';$('oCoins').textContent=G.coins;$('oBest').textContent=G.best.d+' m';$('newRec').style.display=rec&&d>50?'block':'none';showLearned()}
 function toTitle(){voStop();G.state='title';resetRun();$('over').classList.add('hide');$('pause').classList.add('hide');$('hud').classList.remove('on');$('title').classList.remove('hide');document.body.classList.remove('running');showBest()}
 function showBest(){$('best').textContent=G.best.d?`最佳纪录 ${G.best.d} m · 金币 ${G.best.c}`:''}
 function setPause(p,silent){if(p&&G.state!=='run')return;if(!p&&G.state!=='paused')return;G.state=p?'paused':'run';G.pausedBySet=!!(p&&silent);if(p)voStop();$('pause').classList.toggle('hide',!p||!!silent);for(const k in KEY)KEY[k]=false;mouseFire=false}
@@ -1110,9 +1184,9 @@ function banner(t,s){const b=$('banner');b.querySelector('b').textContent=t;b.qu
 // input — discrete actions while running, held keys / drag while fighting the dragon
 function act(a){if(G.state!=='run'&&G.state!=='intro')return;if(BOSS.phase!=='none'&&BOSS.phase!=='warn')return;
   if(SUPER&&(STYLE==='lr')!==(a==='left'||a==='right'))return;   // super-easy: ignore the moves this style doesn't use
-  if(a==='left'||a==='right'){const n=clamp(PL.lane+(a==='left'?-1:1),0,2);if(n!==PL.lane){PL.lane=n;sfx('lane')}}
-  else if(a==='jump'){if(!PL.air&&PL.fly<=0){PL.vy=PL.onKick?LAUNCH_V+1:JUMP_V;PL.air=true;PL.slideT=0;sfx(PL.onKick?'launch':'jump');emit(puffs,PL.x,PL.y+.1,0,8,1.5,1.2,.5,1.4)}}
-  else if(a==='slide'){if(PL.fly>0)return;if(PL.air){PL.vy=Math.min(PL.vy,-22);PL.queueSlide=true}else if(PL.slideT<=0){PL.slideT=SLIDE_TIME;sfx('slide')}}}
+  if(a==='left'||a==='right'){const n=clamp(PL.lane+(a==='left'?-1:1),0,2);if(n!==PL.lane){PL.lane=n;sfx('lane');VO.act={k:a,t:G.t}}}
+  else if(a==='jump'){if(!PL.air&&PL.fly<=0){VO.act={k:'jump',t:G.t};PL.vy=PL.onKick?LAUNCH_V+1:JUMP_V;PL.air=true;PL.slideT=0;sfx(PL.onKick?'launch':'jump');emit(puffs,PL.x,PL.y+.1,0,8,1.5,1.2,.5,1.4)}}
+  else if(a==='slide'){if(PL.fly>0)return;if(PL.air){PL.vy=Math.min(PL.vy,-22);PL.queueSlide=true}else if(PL.slideT<=0){PL.slideT=SLIDE_TIME;sfx('slide');VO.act={k:'slide',t:G.t}}}}
 addEventListener('keydown',e=>{const k=e.code;if(panelOpen()){if(k==='Escape')closePanels();return}
   if(G.state==='title'&&(k==='Enter'||k==='Space')){startRun();e.preventDefault();return}
   if(G.state==='dead'&&G.deadT>1&&(k==='Enter'||k==='Space')){startRun();e.preventDefault();return}
@@ -1144,13 +1218,13 @@ $('pauseBtn').onclick=()=>{if(G.state==='run')setPause(true);else if(G.state==='
 addEventListener('blur',()=>setPause(true));document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true)});
 const KEYS_KB=$('keysTxt').innerHTML,KEYS_TOUCH='左右滑动 换道　上滑 跳跃　下滑 肚皮滑行<br>也可以按屏幕下方的按键';applyMode();
 /* ---------- settings panel: difficulty, buttons, trees, quality, music, sfx, screenshot, share ---------- */
-function syncSeg(){const v={level:LEVEL,style:STYLE,pad:PAD?'1':'0',trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0',voice:VO.mode};
+function syncSeg(){const v={level:LEVEL,style:STYLE,pad:PAD?'1':'0',trees:String(treeLv),quality:qKey,music:AU.music?'1':'0',sfx:AU.sfxOn?'1':'0',voice:VO.mode,learn:LEARN_LV};
   document.querySelectorAll('.seg[data-k]').forEach(s=>s.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v[s.dataset.k])))}
 function applyQuality(k){if(!QUALITY[k])return;qKey=k;Q=QUALITY[k];store.set('quality',k);prNow=Q.pr;prCeil=Infinity;renderer.setPixelRatio(Q.pr);renderer.setSize(innerWidth,innerHeight);
   sun.shadow.mapSize.set(Q.shadow,Q.shadow);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}buildComposer()}
 document.querySelectorAll('.seg[data-k]').forEach(s=>s.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=s.dataset.k,v=b.dataset.v;initAudio();
   if(k==='level')setLevel(v);else if(k==='style'){STYLE=v;store.set('style',v);applyMode()}else if(k==='pad'){PAD=v==='1';store.set('pad',PAD);applyPad()}
-  else if(k==='trees'){treeLv=+v;store.set('trees',treeLv);applyTrees()}else if(k==='quality')applyQuality(v);else if(k==='voice'){setVoice(v);if(v!=='off')cheer('start',null,3)}else setAudio(k,v==='1');syncSeg();syncMusicBtn()}));
+  else if(k==='trees'){treeLv=+v;store.set('trees',treeLv);applyTrees()}else if(k==='quality')applyQuality(v);else if(k==='voice'){setVoice(v);if(v!=='off')cheer('start',null,3)}else if(k==='learn'){LEARN_LV=v;store.set('learn',v);if(v!=='off'&&VO.mode!=='off'){const[zh,en]=LEARN.me[0];voLine(zh,en,true)}}else setAudio(k,v==='1');syncSeg();syncMusicBtn()}));
 syncSeg();
 // panels (参数面板 / 操作说明) pause a running game while open
 const PANELS=['settings','help'];
@@ -1253,7 +1327,7 @@ function collide(){const ph=PL.slideT>0?.5:1.05,hw=.3,safe=PL.fly>0||PL.invT>0||
     const near=PL.fly>0?Math.abs(z)<1.4&&Math.abs(PL.x-c.x)<4.6:Math.abs(z)<.7&&Math.abs(PL.x-c.x)<.75&&Math.abs(PL.y+.55-c.y)<.85;   // golden flight pulls in coins from every lane
     if(near){c.got=true;G.coins++;if(G.t-coinT<.6)coinCombo++;else coinCombo=0;if(coinCombo===10)cheer('combo',null,0);coinT=G.t;sfx('coin');emit(sparks,c.x,c.y,z,9,2.4,2.5,.55,1.6)}}
   for(const it of items){if(it.got)continue;const z=dist-it.s;if(Math.abs(z)<1&&Math.abs(PL.x-it.x)<1&&Math.abs(PL.y+.5-it.y)<1.4){it.got=true;emit(sparks,it.x,it.y,z,22,3,3,.7,2);
-      if(it.type==='boost'){PL.boost=BOOST_T;sfx('boost');cheer('boost');hint('⚡ 加速冲刺！',1.6)}else{PL.fly=FLY_T;PL.invT=0;PL.slideT=0;sfx('fly');cheer('fly');hint('✦ 无敌飞行！',1.6)}}}}
+      if(it.type==='boost'){PL.boost=BOOST_T;sfx('boost');cheer('boost');hint('⚡ 加速冲刺！',1.6)}else{PL.fly=FLY_T;PL.invT=0;PL.slideT=0;sfx('fly');cheer('fly');VO.wings=true;hint('✦ 无敌飞行！',1.6)}}}}
 // sliding into a fence / ice / snowman / crates with enough coins breaks it (platforms are too big)
 function smash(o,z){G.coins-=SMASH_COST;o.box=null;o.g.visible=false;G.shake=.25;PL.slideT=Math.max(PL.slideT,.3);sfx('smash');cheer('smash',null,0);
   emit(puffs,o.x,.9,z,30,4,4,.8,2.4);emit(sparks,o.x,1,z,18,4,4,.6,1.8);hint(`撞碎啦！-${SMASH_COST} 金币`,1.2);updateHUD()}
