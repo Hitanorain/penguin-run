@@ -259,7 +259,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.10';
+const VERSION='0.10.1';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -1056,7 +1056,7 @@ const LEARN={
   crates:[['看，箱子！','Look! Boxes!'],['一、二、三，三个箱子！','One, two, three boxes!'],['箱子是棕色的。','The boxes are brown.']],
   fence:[['跳过栅栏！','Jump over the fence!'],['红白色的栅栏。','A red and white fence.'],['准备，跳！','Ready, jump!']],
   gate:[['从下面滑过去！','Slide under!'],['趴下来！','Get down!'],['我从下面钻过去。','I go under.']],
-  gap:[['小心，有个洞！','Look out! A hole!'],['跳！跳过去！','Jump! Jump over!'],["别掉进水里！","Don't fall in the water!"]],
+  gap:[['小心，有个洞！','Look out! A hole!'],['跳！跳过去！','Jump! Jump over!'],['别掉进水里！',"Don't fall in the water!"]],
   plat:[['跳上去！','Jump up!'],['上去，再下来！','Up and down!']],
   kicker:[['往上冲，飞起来！','Up, up, up!']],
   dolphin:[['看，海豚！','Look! A dolphin!'],['你好，海豚！','Hello, dolphin!'],['海豚会跳！','Dolphins can jump!'],['海豚会游泳。','Dolphins can swim.']],
@@ -1066,7 +1066,7 @@ const LEARN={
   left:[['左边！','Left!'],['往左走！','Go left!']],
   right:[['右边！','Right!'],['往右走！','Go right!']],
   coin:[['黄色的金币！','Yellow coins!'],['我喜欢金币！','I like coins!']],
-  fly:[['我会飞啦！我在天上！','I can fly! I am in the sky!'],['往下看，我看到大海！','Look down! I see the sea!'],["企鹅不会飞，可是我会！","Penguins can't fly. But I can!"],['飞呀飞，飞得好高！','Up, up, up! I am so high!'],['我像小鸟一样飞！','I fly like a bird!']],
+  fly:[['我会飞啦！我在天上！','I can fly! I am in the sky!'],['往下看，我看到大海！','Look down! I see the sea!'],['企鹅不会飞，可是我会！',"Penguins can't fly. But I can!"],['飞呀飞，飞得好高！','Up, up, up! I am so high!'],['我像小鸟一样飞！','I fly like a bird!']],
   thanks:[['谢谢你，金翅膀！','Thank you, golden wings!']],
   sun:[['我看到太阳！','I see the sun!'],['太阳好亮呀！','The sun is bright!']],
   morning:[['早上好，太阳！','Good morning, sun!']],

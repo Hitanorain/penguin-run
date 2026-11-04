@@ -30,8 +30,13 @@ $Sets = @(
 )
 foreach ($set in $Sets) {
 if ($html -notmatch "(?s)const $($set.name)=\{(.+?)\};") { throw "$($set.name) not found in index.html" }
-foreach ($m in [regex]::Matches($Matches[1], "\['([^']*)',\s*(?:""([^""]*)""|'([^']*)')\]")) {
-  $pair = @{ zh = $m.Groups[1].Value; en = $(if ($m.Groups[2].Success) { $m.Groups[2].Value } else { $m.Groups[3].Value }) }
+# 每一对是 ['中文','English']，两边都可以用单引号或双引号（英文里有 ' 时用双引号）
+$body = $Matches[1]
+$found = [regex]::Matches($body, "\[(?:'([^']*)'|""([^""]*)""),\s*(?:""([^""]*)""|'([^']*)')\]")
+$total = [regex]::Matches($body, "\[\s*['""]").Count
+if ($found.Count -ne $total) { throw "$($set.name): only $($found.Count) of $total pairs parsed - check the quotes" }
+foreach ($m in $found) {
+  $pair = @{ zh = $(if ($m.Groups[1].Success) { $m.Groups[1].Value } else { $m.Groups[2].Value }); en = $(if ($m.Groups[3].Success) { $m.Groups[3].Value } else { $m.Groups[4].Value }) }
   foreach ($lang in 'zh', 'en') {
     $t = $pair[$lang]
     $texts = if ($t.Contains('{d}')) { $Dists | ForEach-Object { $t.Replace('{d}', "$_") } }
