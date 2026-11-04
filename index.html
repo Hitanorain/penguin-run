@@ -214,7 +214,7 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <p><b>超简单</b> 跑得最慢、没有恶龙，而且只用一种操作：<b>只左右</b> 时只出现冰块、雪人、木箱，换道躲开就行（点屏幕左半边/右半边也能换道）；<b>只跳滑</b> 时企鹅一直在中间跑道，只出现栅栏、断桥（要跳）和拱门（要滑），点一下屏幕就是跳。</p>
  <p>红白栅栏可以跳过；“冲鸭！”拱门要滑过去；冰块、雪人、木箱只能换道躲开。断桥要及时起跳，高台可以跑上坡道或直接跳上去，跳台会把你弹飞越过断桥。</p>
  <h3>学习短句</h3>
- <p>小企鹅会用简单的中英文短句说出眼前的东西和刚做的动作（“Look! A snowman!”“I can jump!”），飞行时说长一点的句子。摔倒后结算页会列出这一局听到的句子，点一下可以再听。设置里可以调成「多」「少」或「关」；「语音鼓励」选的语言也决定短句用哪种语言。</p>
+ <p>小企鹅会用简单的中英文短句说出眼前的东西和刚做的动作（“Look! A snowman!”“I can jump!”），飞行时说长一点的句子。路上还会随机遇到挥手的企鹅朋友和企鹅妈妈、睡觉的海豹、跳出水面的小鱼、鲸鱼、小帆船、气球、下大雪和彩虹，小企鹅会跟它们打招呼。摔倒后结算页会列出这一局听到的句子，点一下可以再听。设置里可以调成「多」「少」或「关」；「语音鼓励」选的语言也决定短句用哪种语言。</p>
  <h3>道具</h3>
  <p>⚡ <b>蓝色闪电</b> 加速冲刺 5 秒，速度提升到 1.5 倍（不无敌，小心障碍）。<br>✦ <b>金色翅膀</b> 无敌飞行 8 秒，全身金光，不会撞到障碍也不会落海，还会吸走附近三条道的金币。</p>
  <h3>金币能力</h3>
@@ -259,7 +259,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.10.1';
+const VERSION='0.11';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -694,6 +694,92 @@ function buildPenguin(){const root=new THREE.Group(),body=new THREE.Group();root
   const aura=new THREE.Sprite(new THREE.SpriteMaterial({map:makeGlow(),color:0xffc040,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));aura.scale.set(2.8,2.8,1);aura.position.y=.6;aura.visible=false;root.add(aura);
   return{root,body,head,flL,flR,ftL,ftR,anchor,stars,wings,aura}}
 const PG=buildPenguin();scene.add(PG.root);
+
+/* ======================= sights (v0.11): little scenes that show up now and then, made for the learning sentences ======================= */
+// one random sight every 12–20 s of running: penguin friends / a mother and baby waving on the shore, a sleeping seal on a floe, jumping fish,
+// a whale, a sailboat, balloons, a snowfall, a rainbow (daytime). Each has `say` (learning topics, in order, while it is 9–70 m ahead) and maybe `bye`
+const SIGHT={},SG={t:8,recent:[],snowK:0,bowK:0};
+function sightGroup(){const g=new THREE.Group();g.visible=false;scene.add(g);return g}
+// a penguin friend: same model as the player, own materials (the player's glow during flight must not light them up), coloured scarf
+function buddy(col,sc){const p=buildPenguin(),cl={};p.root.remove(p.aura);
+  p.root.traverse(o=>{if(!o.isMesh)return;const m=o.material;if(m!==M.pBlack&&m!==M.pWhite&&m!==M.scarf)return;
+    o.material=cl[m.uuid]??=(()=>{const c=m.clone();c.userData={};if(m===M.scarf){c.map=null;c.color.set(col)}return c})()});
+  p.root.scale.setScalar(sc);return p}
+function waveUpd(o,dt,z){o.ps.forEach((p,i)=>{const t=G.t*1+i*1.3;p.flR.rotation.z=-(2.1+.45*Math.sin(t*9));p.flL.rotation.z=.25+.1*Math.sin(t*4);
+  p.root.position.y=p.y0+Math.abs(Math.sin(t*5))*.1*p.root.scale.x;p.head.rotation.z=Math.sin(t*3)*.15})}
+{const g=sightGroup(),a=buddy(0x3a7bd5,1.25),b=buddy(0x3aa860,1.15);a.root.position.set(0,0,0);b.root.position.set(1.1,0,-1.2);g.add(a.root,b.root);g.rotation.y=-.6;
+ for(const p of[a,b])p.y0=-.06;SIGHT.friends={g,ps:[a,b],x:5.4,say:['friends'],bye:'bye',upd:waveUpd}}
+{const g=sightGroup(),a=buddy(0xe86a9a,1.6),b=buddy(0xf2c230,.8);a.root.position.set(.4,0,-.7);b.root.position.set(-.6,0,.35);g.add(a.root,b.root);g.rotation.y=-.6;
+ for(const p of[a,b])p.y0=-.06;SIGHT.family={g,ps:[a,b],x:5.6,say:['mommy'],bye:'byeMom',upd:waveUpd}}
+// a seal asleep on an ice floe, breathing slowly, little Z's floating up
+{const g=sightGroup(),sm=new THREE.MeshStandardMaterial({color:0x5e5664,roughness:.45}),dk=new THREE.MeshStandardMaterial({color:0x1c1a22,roughness:.6});
+ const floe=msh(new THREE.CylinderGeometry(3,3.2,.45,9),M.snowCap,false,true);floe.position.y=SEA_Y+.05;g.add(floe);
+ const body=new THREE.Group();body.position.y=SEA_Y+.88;body.scale.setScalar(1.5);g.add(body);
+ const b=msh(new THREE.SphereGeometry(1,24,16),sm);b.scale.set(1.25,.42,.55);body.add(b);
+ const h=msh(new THREE.SphereGeometry(.36,20,14),sm);h.position.set(-1.05,.2,0);body.add(h);
+ const nose=msh(new THREE.SphereGeometry(.07,10,8),dk,false,false);nose.position.set(-1.38,.18,.08);body.add(nose);
+ for(const dx of[-.13,.11]){const e=msh(new THREE.TorusGeometry(.055,.014,6,12,Math.PI),dk,false,false);e.rotation.z=Math.PI;e.position.set(-1.1+dx,.3,.31);body.add(e)}   // closed eyes ∪ ∪
+ for(const sz of[-1,1]){const f=msh(new THREE.SphereGeometry(1,12,8),sm);f.scale.set(.32,.06,.16);f.position.set(1.32,-.05,sz*.16);f.rotation.y=sz*.5;body.add(f)}
+ const fp=msh(new THREE.SphereGeometry(1,12,8),sm);fp.scale.set(.3,.05,.14);fp.position.set(-.35,-.28,.46);fp.rotation.y=.6;body.add(fp);
+ const[c,x]=cvs(64,64);x.fillStyle='#fff';x.font='bold 54px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('Z',32,35);const zt=tex(c,{rep:false}),zs=[];
+ for(let i=0;i<3;i++){const m=msh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:zt,color:0x34489a,transparent:true,depthWrite:false}),false,false);g.add(m);zs.push(m)}
+ SIGHT.seal={g,x:-12,say:['seal','sealSleep'],upd(o,dt,z){body.scale.y=1.5*(1+.06*Math.sin(G.t*1.7));
+   zs.forEach((m,i)=>{const ph=(G.t*.45+i/3)%1;m.position.set(-1.8+ph*.9,SEA_Y+1.6+ph*1.9,.4);m.scale.setScalar(.5+ph*.6);m.material.opacity=Math.sin(ph*Math.PI)*.9})}}}
+// three orange fish leaping out of the water one after another beside the pier
+{const g=sightGroup(),fm=new THREE.MeshStandardMaterial({color:0xff8a3a,roughness:.35,metalness:.1,emissive:0xff5a10,emissiveIntensity:.75});
+ const geo=mergeGeometries([new THREE.SphereGeometry(1,14,10).scale(.17,.21,.44),new THREE.ConeGeometry(.22,.32,4).rotateX(-Math.PI/2).scale(.3,1,1).translate(0,0,.56)]).scale(1.5,1.5,1.5);
+ const fs=[0,1,2].map(i=>{const m=msh(geo,fm,true,false);m.userData={dx:-i*.9,dz:i*1.3,ph:i*.37,up:false};g.add(m);return m});
+ SIGHT.fish={g,x:-6.9,say:['fish'],upd(o,dt,z){for(const m of fs){const u=((G.t+m.userData.ph)%1.15)/.8,air=u<1;m.visible=air;
+   if(air){m.position.set(m.userData.dx,SEA_Y-.25+2.4*4*u*(1-u),m.userData.dz-u*2.6);m.rotation.x=(.5-u)*1.7}
+   if(air!==m.userData.up){m.userData.up=air;if(z<BEHIND)emit(puffs,o.x+m.userData.dx,SEA_Y+.1,z+m.userData.dz-(air?0:2.2),10,1.2,2.2,.6,1.6)}}}}}
+// a whale further out: surfaces, blows a spout every few seconds, then dives with its tail up
+{const g=sightGroup(),wm=new THREE.MeshStandardMaterial({color:0x2e3d58,roughness:.4,envMapIntensity:.8});
+ const back=msh(new THREE.SphereGeometry(1,32,18),wm,false,false);back.scale.set(3,1.6,8);g.add(back);
+ const fl=new THREE.Group();g.add(fl);for(const sx of[-1,1]){const f=msh(new THREE.SphereGeometry(1,14,8),wm,false,false);f.scale.set(1.9,.15,.8);f.position.x=sx*1.6;f.rotation.y=sx*.4;fl.add(f)}
+ SIGHT.whale={g,x:-24,ahead:105,win:-112,move:.75,life:19,say:['whale','whaleBig'],upd(o,dt,z){const t=o.t,up=Math.min(1,t/2.5),dive=clamp((t-14)/3.5,0,1);
+   back.position.set(0,SEA_Y-2+1.4*up-1.9*dive+Math.sin(t*1.2)*.08,0);
+   fl.position.set(0,SEA_Y-1.4+3.6*Math.sin(dive*Math.PI)*(dive<1?1:0),7.9-dive*2.5);fl.rotation.x=-.6*dive;fl.visible=dive>0;
+   if(up>=1&&dive<=0&&(o.spT=(o.spT??1)-dt)<=0){o.spT=4;emit(puffs,o.x,SEA_Y+1.2,z-4.5,40,.6,10,1.5,4.2)}}}}
+// a little red sailboat bobbing along on the sea
+{const g=sightGroup(),bt=new THREE.Group(),hull=new THREE.BoxGeometry(1.3,.6,3.6,1,1,6),p=hull.attributes.position;
+ for(let k=0;k<p.count;k++){const z=p.getZ(k),y=p.getY(k);p.setX(k,p.getX(k)*(z<0?1-Math.min(1,-z/1.8)*.85:1)*(y<0?.7:1))}hull.computeVertexNormals();
+ const h=msh(hull,new THREE.MeshStandardMaterial({color:0xc8402e,roughness:.6}));bt.position.y=SEA_Y;bt.scale.setScalar(1.7);g.add(bt);h.position.y=.15;bt.add(h);
+ const mast=msh(new THREE.CylinderGeometry(.05,.05,3.3,6),M.woodDark);mast.position.set(0,1.95,.1);bt.add(mast);
+ const sh=new THREE.Shape();sh.moveTo(0,0);sh.lineTo(0,2.7);sh.lineTo(1.7,0);sh.lineTo(0,0);
+ const sail=msh(new THREE.ShapeGeometry(sh),new THREE.MeshStandardMaterial({color:0xfaf4e6,roughness:.8,side:THREE.DoubleSide}));sail.rotation.y=-Math.PI/2;sail.position.set(.06,.6,.15);bt.add(sail);
+ const fsh=new THREE.Shape();fsh.moveTo(0,0);fsh.lineTo(0,.36);fsh.lineTo(.55,.18);fsh.lineTo(0,0);
+ const flag=msh(new THREE.ShapeGeometry(fsh),new THREE.MeshStandardMaterial({color:0xffc830,roughness:.6,side:THREE.DoubleSide}),false,false);flag.rotation.y=-Math.PI/2;flag.position.set(0,3.2,.1);bt.add(flag);
+ SIGHT.boat={g,x:-15,ahead:90,move:.55,say:['boat'],upd(o,dt,z){bt.rotation.set(Math.sin(G.t*1.1)*.04,.9,Math.sin(G.t*1.3)*.07);bt.position.y=SEA_Y+Math.sin(G.t*1.7)*.1;flag.rotation.x=Math.sin(G.t*6)*.15}}}
+// three balloons — red, yellow, blue — tied together, drifting up from the shore
+{const g=sightGroup(),bg=new THREE.SphereGeometry(.42,20,14).scale(1,1.2,1),kg=new THREE.ConeGeometry(.07,.12,8).rotateX(Math.PI).translate(0,-.53,0),bs=[];
+ [0xe8403a,0xf6c630,0x3a78e0].forEach((c,i)=>{const m=new THREE.MeshStandardMaterial({color:c,roughness:.28,emissive:c,emissiveIntensity:.12});const b=new THREE.Group();b.add(msh(bg,m,true,false),msh(kg,m,false,false));
+   b.userData.p0=new THREE.Vector3((i-1)*.75,2.3+(i===1?.45:0),(i-1)*.12);g.add(b);bs.push(b)});
+ const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(18),3));const line=new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0xf4f0ea}));line.frustumCulled=false;g.add(line);
+ SIGHT.balloons={g,x:6.3,move:.45,say:['balloons','balloonsC'],upd(o,dt,z){const rise=Math.max(0,o.t-3)*.75,lp=lg.attributes.position;g.position.y=.5+rise;
+   bs.forEach((b,i)=>{b.position.copy(b.userData.p0);b.position.x+=Math.sin(G.t*1.3+i*2)*.12;b.position.y+=Math.sin(G.t*1.7+i)*.08;lp.setXYZ(i*2,0,0,0);lp.setXYZ(i*2+1,b.position.x,b.position.y-.6,b.position.z)});
+   lp.needsUpdate=true;g.rotation.z=Math.sin(G.t*.8)*.06;if(rise>45)sightOff(o)}}}
+// weather sights: a heavier snowfall, and a rainbow over the sea (daytime only) in the far group, which turns with the road
+SIGHT.snow={weather:true,life:32,say:['snowing','snowing']};
+SIGHT.rainbow={weather:true,life:40,say:['rainbow','rainbowC']};
+const bowMat=new THREE.ShaderMaterial({uniforms:{uA:{value:0}},transparent:true,depthWrite:false,fog:false,
+  vertexShader:'varying vec2 vP;void main(){vP=position.xy;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:`uniform float uA;varying vec2 vP;vec3 hue(float h){return clamp(abs(mod(h*6.+vec3(0.,4.,2.),6.)-3.)-1.,0.,1.);}
+  void main(){float t=(length(vP)-230.)/38.;float e=smoothstep(0.,.18,t)*smoothstep(1.,.82,t);gl_FragColor=vec4(mix(vec3(1.),hue((1.-t)*.76),.85),e*uA*.45);}`});
+const bow=new THREE.Mesh(new THREE.RingGeometry(230,268,160,1,0,Math.PI),bowMat);bow.position.set(-260,-70,-760);bow.renderOrder=-4;bow.visible=false;far.add(bow);
+const SIGHT_KINDS=Object.keys(SIGHT),SIGHT_TALK=[...SIGHT_KINDS].sort((a,b)=>!!SIGHT[b].weather-!!SIGHT[a].weather);   // weather first when choosing what to talk about (it is rare and fills the whole sky)
+function sightOff(o){o.on=false;if(o.g)o.g.visible=false}
+function sightsReset(){for(const k in SIGHT)sightOff(SIGHT[k]);SG.t=8;SG.recent.length=0}
+function spawnSight(){const e=elevAt(dist);
+  const ok=SIGHT_KINDS.filter(k=>!SIGHT[k].on&&!SG.recent.includes(k)&&(k!=='rainbow'||e>12));if(!ok.length)return;
+  const k=ok[Math.random()*ok.length|0],o=SIGHT[k];SG.recent.push(k);if(SG.recent.length>4)SG.recent.shift();
+  Object.assign(o,{on:true,t:0,i:0,lastT:-99,byed:false,spT:1});if(o.g){o.s=dist+(o.ahead||90);o.g.visible=true}}
+// a new sight waits for a quiet moment, so its hello is not lost behind a sentence that is still playing
+function updateSights(dt){if(G.state==='run'&&BOSS.phase==='none'&&bossNext()-dist>230&&(SG.t=Math.max(0,SG.t-dt))<=0&&!voBusy()){spawnSight();SG.t=12+Math.random()*8}
+  for(const k in SIGHT){const o=SIGHT[k];if(!o.on)continue;o.t+=dt;if(o.weather){if(o.t>o.life)o.on=false;continue}
+    if(BOSS.phase!=='none'){sightOff(o);continue}if(o.move)o.s+=G.speed*o.move*dt;const z=dist-o.s;
+    if(z>BEHIND+6||o.life&&o.t>o.life){sightOff(o);continue}o.g.position.set(o.x,o.g.position.y,z);o.upd(o,dt,z)}
+  const sn=SIGHT.snow,rb=SIGHT.rainbow;SG.snowK=damp(SG.snowK,sn.on&&sn.t<sn.life-6?1:0,.5,dt);snowMat.uniforms.uK.value=SG.snowK;
+  SG.bowK=damp(SG.bowK,rb.on&&rb.t<rb.life-8?1:0,.35,dt);bowMat.uniforms.uA.value=SG.bowK;bow.visible=SG.bowK>.01}
 // scarf tails: verlet ribbons trailing in the wind
 function makeRibbon(n,len,width,phase){const pts=[],prev=[];for(let i=0;i<n;i++){pts.push(new THREE.Vector3());prev.push(new THREE.Vector3())}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(n*2*3),3));const idx=[];for(let i=0;i<n-1;i++){const a=i*2;idx.push(a,a+1,a+2,a+1,a+3,a+2)}geo.setIndex(idx);
@@ -834,10 +920,12 @@ function placeRow(s){if(COIN)return placeRowCoin(s);if(SUPER)return STYLE==='js'
 function spawnAhead(){while(nextS<dist+175&&nextS<bossNext()-150){const ext=placeRow(nextS);const v=speedAt(nextS);nextS+=ext+v*.6+7.5+R()*(16*(1-hardAt(dist))+7)}}
 
 /* ======================= particles ======================= */
-const snowN=Q.snow,snowPos=new Float32Array(snowN*3),snowSz=new Float32Array(snowN);for(let i=0;i<snowN;i++){snowPos[i*3]=(Math.random()-.5)*44;snowPos[i*3+1]=Math.random()*16;snowPos[i*3+2]=-Math.random()*70+12;snowSz[i]=.5+Math.random()}
-const snowGeo=new THREE.BufferGeometry();snowGeo.setAttribute('position',new THREE.BufferAttribute(snowPos,3));snowGeo.setAttribute('aS',new THREE.BufferAttribute(snowSz,1));
+// 3x the flakes: the light everyday snow uses a third of them, a snowfall sight (uK → 1) shows all of them, a bit bigger
+const snowN=Q.snow*3,snowPos=new Float32Array(snowN*3),snowSz=new Float32Array(snowN),snowR=new Float32Array(snowN);for(let i=0;i<snowN;i++){snowPos[i*3]=(Math.random()-.5)*44;snowPos[i*3+1]=Math.random()*16;snowPos[i*3+2]=-Math.random()*70+12;snowSz[i]=.5+Math.random();snowR[i]=Math.random()}
+const snowGeo=new THREE.BufferGeometry();snowGeo.setAttribute('position',new THREE.BufferAttribute(snowPos,3));snowGeo.setAttribute('aS',new THREE.BufferAttribute(snowSz,1));snowGeo.setAttribute('aR',new THREE.BufferAttribute(snowR,1));
 const ptVS=`attribute float aS;uniform float uSize;varying float vA;${BEND_GLSL}void main(){vec4 w=modelMatrix*vec4(position,1.);w.xyz=bendW(w.xyz);vec4 mv=viewMatrix*w;gl_PointSize=uSize*aS/-mv.z;vA=clamp(-mv.z/5.,0.,1.)*clamp(1.-(-mv.z)/70.,0.,1.);gl_Position=projectionMatrix*mv;}`;
-const snowMat=new THREE.ShaderMaterial({uniforms:{uSize:{value:30},uCol:{value:new THREE.Color(1,.92,.85)},uBend:BEND},transparent:true,depthWrite:false,vertexShader:ptVS,
+const snowMat=new THREE.ShaderMaterial({uniforms:{uSize:{value:30},uCol:{value:new THREE.Color(1,.92,.85)},uBend:BEND,uK:{value:0}},transparent:true,depthWrite:false,
+  vertexShader:ptVS.replace('attribute float aS;','attribute float aS,aR;uniform float uK;').replace('gl_PointSize=uSize*aS/-mv.z;','gl_PointSize=uSize*aS*(1.+uK*.45)/-mv.z;').replace('gl_Position=','vA*=step(aR,.34+.66*uK);gl_Position='),
   fragmentShader:`uniform vec3 uCol;varying float vA;void main(){float a=smoothstep(.5,.1,length(gl_PointCoord-.5))*vA;gl_FragColor=vec4(uCol,a*.8);}`});
 const snowPts=new THREE.Points(snowGeo,snowMat);snowPts.frustumCulled=false;scene.add(snowPts);
 // bursts: coin sparkles (additive gold) and snow/water puffs
@@ -1082,7 +1170,22 @@ const LEARN={
   snow:[['雪是白色的。','The snow is white.'],['我喜欢雪！','I like snow!']],
   iceberg:[['看，冰山！','Look! An iceberg!']],
   me:[['我是一只小企鹅！','I am a penguin!'],['我喜欢跑步！','I like to run!'],['我好开心！','I am happy!'],['跑呀跑呀跑！','Run, run, run!'],['我跑得好快！','I am fast!']],
-  facts:[['企鹅会游泳。','Penguins can swim.'],['企鹅喜欢吃鱼。','Penguins like fish.'],['企鹅住在冰雪上。','Penguins live on the ice.']]};
+  facts:[['企鹅会游泳。','Penguins can swim.'],['企鹅喜欢吃鱼。','Penguins like fish.'],['企鹅住在冰雪上。','Penguins live on the ice.']],
+  friends:[['你好，朋友！','Hello, friend!'],['嗨！你好吗？','Hi! How are you?'],['看，我的朋友们！','Look! My friends!']],
+  bye:[['拜拜！','Bye-bye!'],['再见，朋友！','See you, friends!']],
+  mommy:[['你好，妈妈！','Hi, Mommy!'],['我爱你，妈妈！','I love you, Mommy!']],
+  byeMom:[['拜拜，妈妈！','Bye-bye, Mommy!']],
+  seal:[['看，一只海豹！','Look! A seal!']],
+  sealSleep:[['海豹在睡觉。','The seal is sleeping.'],['嘘，海豹在睡觉。','Shh! The seal is sleeping.']],
+  fish:[['看，小鱼！','Look! Fish!'],['小鱼会跳！','The fish can jump!'],['一、二、三条小鱼！','One, two, three fish!'],['好吃的小鱼！','Yummy fish!']],
+  whale:[['看，一条大鲸鱼！','Look! A big whale!'],['鲸鱼喷水啦！','Whoosh! Water!']],
+  whaleBig:[['鲸鱼好大，我好小。','The whale is big. I am small.']],
+  boat:[['看，一艘小船！','Look! A boat!'],['小船在海上。','The boat is on the sea.'],['你好，小船！','Hello, boat!']],
+  balloons:[['看，气球！','Look! Balloons!'],['一、二、三个气球！','One, two, three balloons!']],
+  balloonsC:[['红色、黄色、蓝色！','Red, yellow, blue!'],['气球飞上天了！','The balloons go up!']],
+  snowing:[['下雪啦！','It is snowing!'],['雪花飘下来了。','Snow is falling down.'],['雪花，雪花，白白的雪花！','Snow, snow, white snow!']],
+  rainbow:[['看，彩虹！','Look! A rainbow!'],['彩虹真漂亮！','The rainbow is pretty!']],
+  rainbowC:[['红、橙、黄、绿、蓝！','Red, orange, yellow, green, blue!']]};
 const LEARN_OB={snowman:'snowman',ice:'ice',crates:'crates',fence:'fence',gate1:'gate',gate3:'gate',plat:'plat',platR:'plat',kicker:'kicker'};
 const LEARN_CD={jump:25,slide:25,left:25,right:25,coin:40,fly:3,thanks:3,sun:90,morning:90,evening:90,night:90,cold:120,hungry:1e4,tired:1e4,brave:1e4};   // seconds before the same topic again (default 30)
 const LEARN_IDLE=['sea','birds','trees','snow','iceberg','me','facts'],LEARN_GAP={more:8,less:18};
@@ -1105,7 +1208,10 @@ function voCut(){VO.tok++;VO.loading=false;VO.until=0;for(const s of voSrc)try{s
 async function speak(parts){const tok=++VO.tok;VO.loading=true;const bufs=await Promise.all(parts.map(([l,t])=>clip(l,t)));if(tok!==VO.tok)return;VO.loading=false;
   if(bufs.some(b=>!b)){if(VO.ok)for(const[l,t]of parts)say(l,t);return}
   const c=AU.ctx;if(!VO.out){VO.out=c.createGain();VO.out.gain.value=1;VO.out.connect(AU.master)}let t=c.currentTime+.03;
-  for(const b of bufs){const s=c.createBufferSource();s.buffer=b;s.connect(VO.out);s.start(t);voSrc.push(s);t+=b.duration+.25}VO.until=t;VO.cheerT=Math.max(VO.cheerT,t-c.currentTime+.4)}
+  for(const b of bufs){const s=c.createBufferSource(),[o,d]=voTrim(b);s.buffer=b;s.connect(VO.out);s.start(t,o,d);voSrc.push(s);t+=d+.3}VO.until=t;VO.cheerT=Math.max(VO.cheerT,t-c.currentTime+.4)}
+// the Azure clips carry ~0.25 s of silence before and ~1 s after the words: play only the voiced part (found once per clip)
+function voTrim(b){return b._trim??=(()=>{const x=b.getChannelData(0),r=b.sampleRate;let a=0,e=x.length-1;while(a<e&&Math.abs(x[a])<.01)a++;while(e>a&&Math.abs(x[e])<.01)e--;
+  const s=Math.max(0,a/r-.04);return[s,Math.min(b.duration,e/r+.15)-s]})()}
 const voBusy=()=>VO.loading||(AU.ctx&&AU.ctx.currentTime<VO.until)||VO.ok&&(speechSynthesis.speaking||speechSynthesis.pending);
 // pri 3: settings preview (plays even while paused) · 2: cuts in (start, boss, game over) · 1: skipped while still talking · 0: also needs a quiet gap (combo, jumps)
 function cheer(k,vars,pri=1){if(VO.mode==='off'||pri<3&&(G.state==='paused'||G.state==='title'))return;const now=G.t;
@@ -1120,6 +1226,17 @@ function learnSay(k){const ls=LEARN[k],i=VO.li[k]=((VO.li[k]??Math.random()*ls.l
 // picks what to say: flight lines while flying; otherwise, once the gap has passed, what the child just did > what is coming up ahead > dolphins / cabins > coins > time of day > idle chat
 function learnTick(){if(VO.mode==='off'||LEARN_LV==='off'||BOSS.phase!=='none'||voBusy())return;const t=G.t;if(t-VO.last<2.5)return;
   const ok=k=>t-(VO.lastK['L:'+k]??-99)>=(LEARN_CD[k]??30);
+  // sights come first (they were made to be talked about). Order: bye-bye as the friends go past (short window) > a weather sight's first line >
+  // hello while 9–85 m ahead and a second line right after > a weather sight's later lines. While a sight's first line is still to come,
+  // nothing else starts talking, so the hello is never crowded out
+  let wait=false;const wk=k=>(k==='snow'?SG.snowK:SG.bowK)>.6;
+  for(const k of SIGHT_TALK){const o=SIGHT[k];if(!o.on||o.weather)continue;const z=dist-o.s;if(o.bye&&o.i>0&&!o.byed&&z>-14&&z<9){o.byed=true;return learnSay(o.bye)}}
+  for(const k of SIGHT_TALK){const o=SIGHT[k];if(o.on&&o.weather&&o.i===0&&wk(k)&&t-VO.lastL>3){o.lastT=t;return learnSay(o.say[o.i++])}}
+  for(const k of SIGHT_TALK){const o=SIGHT[k];if(!o.on||o.weather)continue;const z=dist-o.s;
+    if(o.i<o.say.length&&z>(o.win||-85)&&z<-9&&t-o.lastT>2.5){o.lastT=t;return learnSay(o.say[o.i++])}
+    if(o.i===0&&z<-9)wait=true}
+  if(wait)return;
+  for(const k of SIGHT_TALK){const o=SIGHT[k];if(o.on&&o.weather&&o.i>0&&o.i<o.say.length&&wk(k)&&t-o.lastT>9&&t-VO.lastL>3){o.lastT=t;return learnSay(o.say[o.i++])}}
   if(PL.fly>0){if(PL.fly>2&&t-VO.lastL>3){if(VO.wings){VO.wings=false;learnSay('thanks')}else if(ok('fly'))learnSay('fly')}return}
   if(t-VO.lastL<LEARN_GAP[LEARN_LV])return;
   if(VO.brave){VO.brave=false;return learnSay('brave')}
@@ -1163,7 +1280,7 @@ function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.
   for(const it of items)it.got=true;updateItems();clearBoss();
   Object.assign(CRV,{k:0,segK:0,segEnd:200,head:0});BEND.value=0;
   Object.assign(PL,{lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0});PG.stars.visible=false;PG.root.visible=true;PG.root.rotation.set(0,0,0);PG.root.scale.setScalar(1);
-  for(const d of dolphins){d.on=false;d.m.visible=false}updateHUD(true)}
+  for(const d of dolphins){d.on=false;d.m.visible=false}sightsReset();updateHUD(true)}
 function startRun(){initAudio();resetRun();G.state='intro';G.introT=0;sfx('start');voReset();cheer('start',null,2);$('title').classList.add('hide');$('over').classList.add('hide');$('hud').classList.add('on');document.body.classList.add('running');
   if(COIN)hint('随便跑，把金币都吃掉吧！',3.5);
   else if(SUPER)hint(STYLE==='lr'?'左右换道，躲开冰块和雪人！':'栅栏和断桥要跳，拱门要滑！',3.5);
@@ -1382,7 +1499,7 @@ function updateAtmosphere(dt){const e=elevAt(dist),head=CRV.head+BOSS.cam*.7;   
 function updateWorld(dt,scroll){
   deckT.map.offset.y=deckT.normalMap.offset.y=deckT.roughnessMap.offset.y=dist/DECK_TILE;
   snowT.map.offset.y=snowT.normalMap.offset.y=dist/20;
-  updateDecor();updateCabins();updateDolphins(dt);updateItems();
+  updateDecor();updateCabins();updateDolphins(dt);updateSights(dt);updateItems();
   const gp=glowGeo.attributes.position;lampItems.forEach((it,i)=>gp.setXYZ(i,it.x,inHole(it.s)?-60:2.75,dist-it.s));gp.needsUpdate=true;
   const p=snowGeo.attributes.position;for(let i=0;i<snowN;i++){let x=p.getX(i)+Math.sin(G.t*.7+i)*.3*dt,y=p.getY(i)-(.9+snowSz[i]*.6)*dt,z=p.getZ(i)+(scroll*.9+1)*dt;
     if(y<0){y+=16}if(z>12){z-=70;x=(Math.random()-.5)*44}p.setXYZ(i,x,y,z)}p.needsUpdate=true;
@@ -1423,7 +1540,7 @@ function frame(now){requestAnimationFrame(frame);const real=Math.min(.25,(now-la
   fpsAcc+=real;fpsN++;if(fpsAcc>=1){const f=fpsN/fpsAcc;adapt(f);if(showFps)$('fps').textContent=`${f.toFixed(0)} fps · ${Q.n} · ${prNow.toFixed(2)}x · v${VERSION}`;fpsAcc=fpsN=0}}
 updateAtmosphere(0);bakeEnv(elevAt(0));updateWorld(0,0);updateCamera(1);showBest();
 requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);$('loading').classList.add('hide');$('title').classList.remove('hide')});
-window.__G={G,PL,CRV,step,act,startRun,toTitle,get dist(){return dist},set dist(v){dist=v},obstacles,coins,holes,plats,kickers,dolphins,decor,spawnPod,renderer,composer,placeRow,rowGap,rowPlat,rowKicker,clearObs,
+window.__G={G,PL,CRV,step,act,startRun,toTitle,get dist(){return dist},set dist(v){dist=v},obstacles,coins,holes,plats,kickers,dolphins,decor,spawnPod,SIGHT,SG,renderer,composer,placeRow,rowGap,rowPlat,rowKicker,clearObs,
   set nextS(v){nextS=v},get nextS(){return nextS},BOSS,DRG,FB,FISH,KEY,items,addItem,addObs,buyFly,startBoss,crash,screenshot,openSettings,
   setMouseFire:v=>mouseFire=v,
   setQuality:k=>{store.set('quality',k);location.reload()}};
