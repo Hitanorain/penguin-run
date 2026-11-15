@@ -261,7 +261,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.13';
+const VERSION='0.13.1';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -320,7 +320,7 @@ function prep(root){root.traverse(o=>{if(!(o.isMesh||o.isPoints||o.isLine))retur
 const CRV={k:0,segK:0,segEnd:200,head:0};   // current curvature, target, where the current segment ends, accumulated heading
 // maps (v0.12): 0 = sunset coast, 1 = aurora glacier canyon (polar night). Beating the dragon moves on to the other map behind a snow white-out;
 // modes without a dragon swap every 2000 m. Decor / sights tagged `map` only show on that map; ?map=1 starts in the canyon (testing)
-const MAP={id:0,sw:null,nextS:2000,hello:null,start:+(/[?&]map=([12])/.exec(location.search)||[0,0])[1]};
+const MAP={id:0,sw:null,nextS:2000,hello:null,bag:[0,1,2],bi:0,start:/[?&]map=([012])/.test(location.search)?+RegExp.$1:null};
 const MAP_INFO=[['夕阳海岸','回到海边啦','mapSea'],['极光冰川峡谷','来到了新的地方','mapIce'],['樱花春日湖畔','春天来啦','mapSpring']];
 const onMap=m=>m==null||m===MAP.id||m.length>0&&m.includes(MAP.id);   // a `map` tag is one id or a list of ids
 const BOSS={next:2000,level:1,phase:'none',t:0,cam:0,hp:1,max:1,hearts:3,inv:0,py:0,pz:0,shotT:0,sunK:0};   // dragon fight state (see updateBoss)
@@ -1274,7 +1274,7 @@ function updateBoss(dt){
    D.root.rotation.z+=dt*1.6;D.root.rotation.x+=dt*.8;
     if(Math.random()<.35)emit(sparks,P.x,P.y+(Math.random()-.5)*2,P.z+(Math.random()-.5)*3,6,3,2,.6,2);
     if(!DRG.splashed&&P.y<SEA_Y){DRG.splashed=true;D.root.visible=false;emit(puffs,P.x,SEA_Y+.2,P.z,60,4,6,1.2,3.6);sfx('splash')}
-    if(BOSS.t>2.8){BOSS.phase='transOut';BOSS.t=0;switchMap((MAP.id+1)%3);$('bossUI').classList.remove('on');$('hearts').classList.remove('on')}}
+    if(BOSS.t>2.8){BOSS.phase='transOut';BOSS.t=0;switchMap(nextMap());$('bossUI').classList.remove('on');$('hearts').classList.remove('on')}}
   else if(BOSS.phase==='transOut'){BOSS.cam=1-smooth(0,1,BOSS.t/1.8);BOSS.py=damp(BOSS.py,0,3,dt);BOSS.pz=damp(BOSS.pz,0,3,dt);
     if(BOSS.t>1.8){BOSS.phase='none';BOSS.cam=0;Object.assign(PL,{y:0,vy:0,air:false,x:0,lane:1});nextS=dist+60;BOSS.next+=2000;BOSS.level++;D.root.visible=false}}
   if(D.root.visible)updateDragonAnim(dt);
@@ -1549,11 +1549,11 @@ const PL={lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,ph:0,cr
 const SLIDE_TIME=.72,JUMP_V=10.4,GRAV=30,LAUNCH_V=11.5,FLY_Y=3.7,BOOST_T=5.5,FLY_T=8;
 const SMASH_COST=1,FLY_COST=50;   // coin abilities: belly-slide through an obstacle / buy a golden-wing flight
 function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.length=0;dist=0;nextS=60;nextItemS=320;R=rng((Date.now()^0x5bd1e995)>>>0);G.coins=0;G.speed=0;G.shake=0;G.told={};
-  for(const it of items)it.got=true;updateItems();clearBoss();setMap(MAP.start);Object.assign(MAP,{sw:null,nextS:2000,hello:null});$('flash').classList.remove('on');prints.length=0;FWQ.length=0;
+  for(const it of items)it.got=true;updateItems();clearBoss();Object.assign(MAP,{sw:null,nextS:2000,hello:null});$('flash').classList.remove('on');prints.length=0;FWQ.length=0;
   Object.assign(CRV,{k:0,segK:0,segEnd:200,head:0});BEND.value=0;
   Object.assign(PL,{lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0});PG.stars.visible=false;PG.root.visible=true;PG.root.rotation.set(0,0,0);PG.root.scale.setScalar(1);
   for(const d of dolphins){d.on=false;d.m.visible=false}sightsReset();updateHUD(true)}
-function startRun(){initAudio();resetRun();G.state='intro';G.introT=0;sfx('start');voReset();cheer('start',null,2);$('title').classList.add('hide');$('over').classList.add('hide');$('hud').classList.add('on');document.body.classList.add('running');
+function startRun(){initAudio();if(G.state!=='title')newBag();resetRun();G.state='intro';G.introT=0;sfx('start');voReset();cheer('start',null,2);$('title').classList.add('hide');$('over').classList.add('hide');$('hud').classList.add('on');document.body.classList.add('running');
   if(COIN)hint('随便跑，把金币都吃掉吧！',3.5);
   else if(SUPER)hint(STYLE==='lr'?'左右换道，躲开冰块和雪人！':'栅栏和断桥要跳，拱门要滑！',3.5);
   else if(!store.get('tutored',false)){hint(TOUCH?'左右滑动换道 · 上滑跳跃 · 下滑滑行':'← → 换道　↑ 跳跃　↓ 滑行',3.5);store.set('tutored',true)}}
@@ -1564,7 +1564,7 @@ function crash(cause){G.state='dead';G.deadT=0;G.cause=cause;PL.boost=0;
   const d=Math.floor(dist),rec=d>G.best.d;if(rec)G.best={d,c:G.coins};store.set('best',G.best);
   $('overTitle').textContent=cause==='water'?'扑通！掉进海里了':cause==='boss'?'被恶龙打败了':'摔倒啦';
   cheer(cause==='boss'?'overBoss':rec&&d>50?'overRec':'over',null,2);$('oDist').textContent=d+' m';$('oCoins').textContent=G.coins;$('oBest').textContent=G.best.d+' m';$('newRec').style.display=rec&&d>50?'block':'none';showLearned()}
-function toTitle(){voStop();G.state='title';resetRun();$('over').classList.add('hide');$('pause').classList.add('hide');$('hud').classList.remove('on');$('title').classList.remove('hide');document.body.classList.remove('running');showBest()}
+function toTitle(){voStop();G.state='title';resetRun();newBag();$('over').classList.add('hide');$('pause').classList.add('hide');$('hud').classList.remove('on');$('title').classList.remove('hide');document.body.classList.remove('running');showBest()}
 function showBest(){$('best').textContent=G.best.d?`最佳纪录 ${G.best.d} m · 金币 ${G.best.c}`:''}
 function setPause(p,silent){if(p&&G.state!=='run')return;if(!p&&G.state!=='paused')return;G.state=p?'paused':'run';G.pausedBySet=!!(p&&silent);if(p)voStop();$('pause').classList.toggle('hide',!p||!!silent);for(const k in KEY)KEY[k]=false;mouseFire=false}
 let hintT=0;function hint(s,t){$('hint').textContent=s;$('hint').classList.add('on');hintT=t}
@@ -1652,10 +1652,15 @@ function setMap(id){MAP.id=id;const d=DECK_TEX[id],sp=id===2;M.deck.map=d.map;M.
   seaMat.uniforms.uDeep.value.set([0x0f3248,0x06203a,0x14506a][id]);seaMat.uniforms.uShallow.value.set([0x2f7a88,0x1c6688,0x4aa89c][id]);SKY.uAur.value=id===1?1:0;gradePass.uniforms.uTone.value=id===1?.25:1;
   M.snow.map=sp?grassT:snowT.map;M.snow.roughness=sp?.92:.62;M.cabinRoof.color.set(sp?0xb5523a:0xf2f5fb);for(const m of railSnowM)m.visible=!sp;for(const m of farIce)m.visible=!sp;   // spring: grass, no snow on the rails / roofs, no ice out on the lake
   envE=999;for(const k in SIGHT)sightOff(SIGHT[k]);SG.t=Math.max(SG.t,5);VO.e=null;VO.day=null}
+// random rotation (v0.13.1): each round visits the three maps once in a shuffled order; a new round never starts on the map you are standing in.
+// newBag() picks the round for a fresh run (shown on the title screen already); ?map=N forces the first map (testing)
+function shuffleBag(avoid){const b=[0,1,2];for(let i=2;i>0;i--){const j=Math.random()*(i+1)|0;[b[i],b[j]]=[b[j],b[i]]}if(b[0]===avoid)[b[0],b[1]]=[b[1],b[0]];MAP.bag=b;MAP.bi=0}
+function newBag(){shuffleBag(-1);if(MAP.start!=null){const b=MAP.bag,i=b.indexOf(MAP.start);[b[0],b[i]]=[b[i],b[0]]}setMap(MAP.bag[0])}
+function nextMap(){if(++MAP.bi>=3)shuffleBag(MAP.id);return MAP.bag[MAP.bi]}
 function switchMap(id){if(MAP.sw)return;MAP.sw={t:0,to:id,done:false};$('flash').classList.add('on');sfx('whoosh')}
 // white-out: the screen goes white, the map is swapped behind it, and it clears once the camera is back behind the penguin
 function updateMap(dt){const w=MAP.sw;
-  if(!w){if(G.state==='run'&&bossNext()===Infinity&&dist>=MAP.nextS){MAP.nextS+=2000;switchMap((MAP.id+1)%3)}return}
+  if(!w){if(G.state==='run'&&bossNext()===Infinity&&dist>=MAP.nextS){MAP.nextS+=2000;switchMap(nextMap())}return}
   w.t+=dt;if(!w.done&&w.t>.55){w.done=true;setMap(w.to)}
   if(w.t>1&&BOSS.cam<.05){MAP.sw=null;$('flash').classList.remove('on');if(G.state!=='run')return;
     const inf=MAP_INFO[MAP.id];banner(inf[0],inf[1]);MAP.hello=inf[2];fireworks(10,.5)}}
@@ -1824,7 +1829,7 @@ let last=performance.now();
 function frame(now){requestAnimationFrame(frame);const real=Math.min(.25,(now-last)/1000);last=now;const dt=Math.min(real,1/20);
   step(dt*timeScale());composer.render();
   fpsAcc+=real;fpsN++;if(fpsAcc>=1){const f=fpsN/fpsAcc;adapt(f);if(showFps)$('fps').textContent=`${f.toFixed(0)} fps · ${Q.n} · ${prNow.toFixed(2)}x · v${VERSION}`;fpsAcc=fpsN=0}}
-setMap(MAP.start);updateAtmosphere(0);bakeEnv(elevAt(0));updateWorld(0,0);updateCamera(1);showBest();
+newBag();updateAtmosphere(0);bakeEnv(elevAt(0));updateWorld(0,0);updateCamera(1);showBest();
 requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);$('loading').classList.add('hide');$('title').classList.remove('hide')});
 window.__G={G,PL,CRV,step,act,startRun,toTitle,get dist(){return dist},set dist(v){dist=v},obstacles,coins,holes,plats,kickers,dolphins,decor,spawnPod,SIGHT,SG,renderer,composer,placeRow,rowGap,rowPlat,rowKicker,clearObs,MAP,setMap,switchMap,fireworks,MET,VO,
   set nextS(v){nextS=v},get nextS(){return nextS},BOSS,DRG,FB,FISH,KEY,items,addItem,addObs,buyFly,startBoss,crash,screenshot,openSettings,
