@@ -105,7 +105,7 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
 #hearts{position:fixed;left:calc(env(safe-area-inset-left,0px) + 20px);top:calc(env(safe-area-inset-top,0px) + 108px);font-size:24px;letter-spacing:4px;display:none;text-shadow:0 2px 6px rgba(0,0,0,.4)}
 #hearts.on{display:block}#hearts i{font-style:normal;color:#ff5a6a}#hearts i.off{color:rgba(255,255,255,.25)}
 #banner{position:fixed;left:50%;top:32%;transform:translate(-50%,-50%);text-align:center;opacity:0;pointer-events:none;display:flex;flex-direction:column;gap:6px;text-shadow:0 3px 18px rgba(60,0,20,.7)}
-#banner b{font-family:"Noto Serif SC",serif;font-size:clamp(36px,7vw,72px);font-weight:900;letter-spacing:.2em;padding-left:.2em;background:linear-gradient(180deg,#fff2d8,#ffb070 60%,#ff5a4a);-webkit-background-clip:text;background-clip:text;color:transparent}
+#banner b{white-space:nowrap;font-family:"Noto Serif SC",serif;font-size:clamp(36px,7vw,72px);font-weight:900;letter-spacing:.2em;padding-left:.2em;background:linear-gradient(180deg,#fff2d8,#ffb070 60%,#ff5a4a);-webkit-background-clip:text;background-clip:text;color:transparent}
 #banner small{font-size:15px;letter-spacing:.2em;color:#fff}
 #banner.on{animation:bn 2.6s ease-out forwards}@keyframes bn{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}20%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-62%) scale(1)}}
 #speedfx{position:fixed;inset:-10%;pointer-events:none;opacity:0;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.22) 0 .6deg,transparent .6deg 6deg);
@@ -146,6 +146,8 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
 #loading.hide{opacity:0;pointer-events:none}
 #hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);font-size:13px;letter-spacing:.12em;color:var(--fg);padding:8px 18px;border-radius:999px;background:rgba(52,30,52,.4);opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap}
 #hint.on{opacity:1}
+/* snow white-out that hides the swap between maps */
+#flash{position:fixed;inset:0;background:radial-gradient(circle,#fff,#dcecff);opacity:0;pointer-events:none;transition:opacity .45s}#flash.on{opacity:1}
 /* voice cheer subtitles */
 #cheer{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 74px);transform:translateX(-50%);max-width:88vw;text-align:center;display:flex;flex-direction:column;gap:3px;opacity:0;transition:opacity .4s,transform .4s;pointer-events:none;text-shadow:0 2px 12px rgba(60,0,20,.75)}
 #cheer b{font-size:clamp(17px,2.6vw,24px);font-weight:800;letter-spacing:.05em;color:#fff2d8}
@@ -168,7 +170,7 @@ body.coinmode #smashTag,body.only-lr #smashTag{display:none}
  <div id="hearts"></div>
  <div id="fps"></div>
 </div>
-<div id="speedfx"></div>
+<div id="speedfx"></div><div id="flash"></div>
 <div id="pbar" class="glass"><span></span><div class="trk"><b></b></div></div>
 <div id="power">
  <button id="flyBtn" title="飞行模式 (F)" aria-label="飞行模式"><svg viewBox="0 0 24 24"><path d="M12 14C9 8 5.5 6 2.5 6c.5 4.5 3.5 8 9.5 8.5"/><path d="M12 14c3-6 6.5-8 9.5-8-.5 4.5-3.5 8-9.5 8.5"/><path d="M6.5 9.6c1.4.4 2.6 1.2 3.6 2.3M17.5 9.6c-1.4.4-2.6 1.2-3.6 2.3"/></svg><span>飞行</span><em>50</em></button>
@@ -259,7 +261,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.11';
+const VERSION='0.12';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -316,6 +318,9 @@ const DEPTH=bendify(new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPac
 function prep(root){root.traverse(o=>{if(!(o.isMesh||o.isPoints||o.isLine))return;const ms=Array.isArray(o.material)?o.material:[o.material];
   for(const m of ms)if(!m.isShaderMaterial&&!m.userData.noBend)bendify(m);if(o.isMesh&&o.castShadow)o.customDepthMaterial=DEPTH})}
 const CRV={k:0,segK:0,segEnd:200,head:0};   // current curvature, target, where the current segment ends, accumulated heading
+// maps (v0.12): 0 = sunset coast, 1 = aurora glacier canyon (polar night). Beating the dragon moves on to the other map behind a snow white-out;
+// modes without a dragon swap every 2000 m. Decor / sights tagged `map` only show on that map; ?map=1 starts in the canyon (testing)
+const MAP={id:0,sw:null,nextS:2000,hello:null,start:/[?&]map=1/.test(location.search)?1:0};
 const BOSS={next:2000,level:1,phase:'none',t:0,cam:0,hp:1,max:1,hearts:3,inv:0,py:0,pz:0,shotT:0,sunK:0};   // dragon fight state (see updateBoss)
 
 /* ======================= day palette =======================
@@ -343,7 +348,9 @@ function sampleKeys(K,e,P){let i=0;while(i<K.length-2&&e>K[i+1].e)i++;const a=K[
   for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs']){(P[c]||(P[c]=new THREE.Color())).copy(a[c]).lerp(b[c],t)}
   for(const n of ['li','hi','exp','bloom','night'])P[n]=lerp(a[n],b[n],t);return P}
 // am: 1 = morning table, 0 = evening table (they are identical above 25°, where the swap happens)
-function samplePalette(e,am=0){sampleKeys(KEYS,e,PAL);if(am<=0)return PAL;sampleKeys(KEYS_AM,e,PAL_AM);
+function samplePalette(e,am=0){if(MAP.id===1){for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs'])(PAL[c]||(PAL[c]=new THREE.Color())).copy(ICE_PAL[c]);
+    for(const n of ['li','hi','exp','bloom','night'])PAL[n]=ICE_PAL[n];return PAL}
+  sampleKeys(KEYS,e,PAL);if(am<=0)return PAL;sampleKeys(KEYS_AM,e,PAL_AM);
   for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs'])PAL[c].lerp(PAL_AM[c],am);
   for(const n of ['li','hi','exp','bloom','night'])PAL[n]=lerp(PAL[n],PAL_AM[n],am);return PAL}
 const SUN_AZ=new THREE.Vector2(-.34,-1).normalize();   // the sun sets ahead and a little to the left, over the sea
@@ -353,12 +360,15 @@ function sunVec(eDeg,out){const e=eDeg*Math.PI/180;return out.set(Math.cos(e)*az
 const DAY_LEN=2400,DAY_P0=.04;
 const DAY_E=[[0,-1.5],[.06,5],[.2,22],[.35,42],[.47,52],[.6,38],[.72,18],[.82,7],[.88,1],[.92,-4],[.96,-6.5],[1,-1.5]];   // [phase, sun elevation°]
 const dayPhase=d=>((d/DAY_LEN+DAY_P0)%1+1)%1;
-function elevAt(d){const p=dayPhase(d);let i=0;while(p>DAY_E[i+1][0])i++;const[a,ea]=DAY_E[i],[b,eb]=DAY_E[i+1];const t=(p-a)/(b-a);return lerp(ea,eb,t*t*(3-2*t))}
+// the canyon is in polar night: the "sun" is a pale moon that stays 20° up, and one fixed icy palette replaces the day tables
+const ICE_PAL=(k=>{for(const c of ['zen','hor','gnd','sun','hs','hg','fog','ct','cs'])k[c]=new THREE.Color(k[c]);return k})(
+  {zen:'#050e2a',hor:'#1c4466',gnd:'#0a1424',sun:'#9cc4f0',li:.8,hs:'#6a98d0',hg:'#243a5a',hi:.8,fog:'#173654',exp:1.0,ct:'#2a4c6e',cs:'#0c1832',bloom:.5,night:.9});
+function elevAt(d){if(MAP.id===1)return 20;const p=dayPhase(d);let i=0;while(p>DAY_E[i+1][0])i++;const[a,ea]=DAY_E[i],[b,eb]=DAY_E[i+1];const t=(p-a)/(b-a);return lerp(ea,eb,t*t*(3-2*t))}
 const amAt=d=>{const p=dayPhase(d);return p<.47?1:p<.97?0:smooth(.97,1,p)};   // morning colours until noon; the late-night stretch eases into the dawn palette
 
 /* ======================= shared GLSL ======================= */
 const SKY={uSunDir:{value:new THREE.Vector3()},uZen:{value:new THREE.Color()},uHor:{value:new THREE.Color()},uGnd:{value:new THREE.Color()},uSun:{value:new THREE.Color()},
-  uCT:{value:new THREE.Color()},uCS:{value:new THREE.Color()},uNight:{value:0},uTime:{value:0},uCloud:{value:new THREE.Vector2()},uHead:{value:0}};
+  uCT:{value:new THREE.Color()},uCS:{value:new THREE.Color()},uNight:{value:0},uTime:{value:0},uCloud:{value:new THREE.Vector2()},uHead:{value:0},uAur:{value:0}};
 const NOISE=`
 float hash12(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
 float hash13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
@@ -381,18 +391,24 @@ vec3 skyBase(vec3 d){
 /* ======================= sky ======================= */
 const skyMat=new THREE.ShaderMaterial({uniforms:SKY,side:THREE.BackSide,depthWrite:false,
  vertexShader:`varying vec3 vDir;void main(){vDir=position;vec4 p=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_Position=p.xyww;}`,
- fragmentShader:`${NOISE}${SKYFN}uniform vec3 uCT,uCS;uniform vec2 uCloud;uniform float uHead;varying vec3 vDir;
+ fragmentShader:`${NOISE}${SKYFN}uniform vec3 uCT,uCS;uniform vec2 uCloud;uniform float uHead,uAur;varying vec3 vDir;
  void main(){vec3 d=normalize(vDir);vec3 c=skyBase(d);float mu=dot(d,uSunDir);
   c+=uSun*smoothstep(.99955,.99978,mu)*4.;
   float ch=cos(uHead),sh=sin(uHead);vec3 dr=vec3(ch*d.x+sh*d.z,d.y,-sh*d.x+ch*d.z);   // clouds and stars turn with the road
   if(uNight>.02&&d.y>0.){vec3 p=dr*240.;vec3 ce=floor(p);float h=hash13(ce);
     if(h>.9962){float s=smoothstep(.42,0.,length(fract(p)-.5));c+=vec3(1.,.9,.82)*s*uNight*2.2*smoothstep(.06,.4,d.y)*(.6+.4*sin(uTime*2.+h*80.));}}
+  if(uAur>.01&&d.y>.02){vec2 a=dr.xz/(d.y+.3);float w=fbm(a*.8+vec2(uTime*.025,0.));     // aurora: slow green curtains with fine rays, violet toward the top
+    float cur=smoothstep(.45,1.,sin(a.y*2.1+w*5.5+uTime*.11))+.7*smoothstep(.6,1.,sin(a.y*3.7-w*7.+1.7-uTime*.08));
+    float rays=.5+.5*vnoise(vec2(a.x*8.+w*4.,uTime*.35));
+    float hgt=smoothstep(.03,.2,d.y)*(1.-smoothstep(.45,.95,d.y));
+    vec3 ac=mix(vec3(.12,1.,.5),vec3(.6,.3,1.),clamp(smoothstep(.16,.6,d.y)+(w-.5)*.5,0.,1.));
+    c+=ac*cur*rays*hgt*uAur*1.25;}
   if(d.y>-.02){vec2 uv=dr.xz/(d.y+.11);uv=vec2(uv.x*.42,uv.y*1.55)+uCloud;     // long sunset streaks across the view
     float n=fbm(uv*.85),n2=fbm(uv*2.3+4.7);float dn=smoothstep(.5,.82,n*.72+n2*.38);
     dn*=smoothstep(-.02,.1,d.y)*(1.-smoothstep(.45,.85,d.y));
     float lit=clamp(.3+(n2-.45)*1.6+pow(max(mu,0.),2.)*.7,0.,1.);
     vec3 cc=mix(uCS,uCT,lit)+uSun*pow(max(mu,0.),6.)*(1.-dn)*1.1;            // silver lining near the sun
-    c=mix(c,cc,dn*.88);}
+    c=mix(c,cc,dn*.88*(1.-.8*uAur));}
   gl_FragColor=vec4(c,1.);}`});
 const sky=new THREE.Mesh(new THREE.SphereGeometry(1200,48,24),skyMat);sky.frustumCulled=false;sky.renderOrder=-10;scene.add(sky);
 // environment lighting baked from the same sky (re-baked when the sun moves noticeably)
@@ -438,6 +454,17 @@ function makeDeck(){const S=512,n=tileNoise(S,6,11),n2=tileNoise(S,4,23),R=rng(5
       if(snow>0){const sv=.92+.08*n[i];r=lerp(r,.93*sv,snow);g=lerp(g,.95*sv,snow);b=lerp(b,1*sv,snow);h=lerp(h,.75+n[i]*.15,snow);ro=lerp(ro,.5,snow)}
       col[i*4]=r*255;col[i*4+1]=g*255;col[i*4+2]=b*255;col[i*4+3]=255;hgt[i]=h;rough[i]=ro}}
   const[c,g]=cvs(S,S);g.putImageData(new ImageData(col,S,S),0,0);return{map:tex(c),normalMap:normalMap(hgt,S,S,6),roughnessMap:grayMap(rough,S,S)}}
+// the canyon road: a slab of blue glacier ice with white cracks and snow blown against both edges (same 8 x 4 m tile as the boardwalk)
+function makeIceDeck(){const S=512,n=tileNoise(S,6,57),n2=tileNoise(S,3,19),R=rng(21);const col=new Uint8ClampedArray(S*S*4),hgt=new Float32Array(S*S),rough=new Float32Array(S*S),crk=new Float32Array(S*S);
+  for(let k=0;k<26;k++){let x=R()*S,y=R()*S,a=R()*6.28;for(let s=0;s<70;s++){a+=(R()-.5)*.55;x+=Math.cos(a)*2;y+=Math.sin(a)*2;
+    const xi=((x|0)%S+S)%S,yi=((y|0)%S+S)%S;for(let o=-1;o<=1;o++){const j=yi*S+((xi+o+S)%S);crk[j]=Math.max(crk[j],o?.45:1)}}}
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){const i=y*S+x,v=n[i],w=n2[i];
+    let r=.34+.2*v+.1*w,g=.6+.2*v+.08*w,b=.8+.14*v,h=.5+v*.1,ro=.16+.2*w;
+    const c=crk[i];if(c>0){r=lerp(r,.9,c*.8);g=lerp(g,.96,c*.8);b=lerp(b,1,c*.8);h-=.3*c;ro=.5}
+    const edge=Math.min(x,S-1-x)/S,drift=smooth(.15+.07*n[(y*S+x*3)%(S*S)],.05,edge),dust=smooth(.66,.9,n2[(i*7)%(S*S)])*.5,snow=Math.max(drift,dust*(1-drift));
+    if(snow>0){const sv=.92+.08*v;r=lerp(r,.93*sv,snow);g=lerp(g,.96*sv,snow);b=lerp(b,sv,snow);h=lerp(h,.72+v*.15,snow);ro=lerp(ro,.6,snow)}
+    col[i*4]=r*255;col[i*4+1]=g*255;col[i*4+2]=b*255;col[i*4+3]=255;hgt[i]=h;rough[i]=ro}
+  const[c,g]=cvs(S,S);g.putImageData(new ImageData(col,S,S),0,0);return{map:tex(c),normalMap:normalMap(hgt,S,S,5),roughnessMap:grayMap(rough,S,S)}}
 function makeSnow(){const S=512,n=tileNoise(S,7,31),m=tileNoise(S,3,7);const col=new Uint8ClampedArray(S*S*4),h=new Float32Array(S*S);
   for(let i=0;i<S*S;i++){const v=.9+.07*m[i]+.05*n[i];col[i*4]=v*.95*255;col[i*4+1]=v*.97*255;col[i*4+2]=Math.min(255,v*1.02*255);col[i*4+3]=255;h[i]=m[i]*.7+n[i]*.5}
   const[c,g]=cvs(S,S);g.putImageData(new ImageData(col,S,S),0,0);return{map:tex(c),normalMap:normalMap(h,S,S,3)}}
@@ -469,7 +496,8 @@ function makeFeather(){const S=256,n=tileNoise(S,6,91),h=new Float32Array(S*S);f
 
 /* ======================= materials ======================= */
 const deckT=makeDeck(),snowT=makeSnow(),iceT=makeIce(),knitT=makeKnit(),featherN=makeFeather(),crateC=makeCrate();
-const DECK_TILE=4;for(const t of [deckT.map,deckT.normalMap,deckT.roughnessMap])t.repeat.set(1,420/DECK_TILE);
+const iceDeckT=makeIceDeck(),DECK_TEX=[deckT,iceDeckT];
+const DECK_TILE=4;for(const d of DECK_TEX)for(const t of [d.map,d.normalMap,d.roughnessMap])t.repeat.set(1,420/DECK_TILE);
 for(const t of [snowT.map,snowT.normalMap])t.repeat.set(70,70);
 const crateT=tex(crateC),crateLong=tex(crateC);crateLong.repeat.set(16/1.25,1);crateT.repeat.set(1.5,1);
 const M={
@@ -511,7 +539,13 @@ const M={
  bolt:new THREE.MeshStandardMaterial({color:0x9fe8ff,emissive:0x2aa8ff,emissiveIntensity:1.6,roughness:.3}),
  bubble:new THREE.MeshStandardMaterial({color:0xbfefff,transparent:true,opacity:.28,roughness:.05,envMapIntensity:2,depthWrite:false}),
  fish:new THREE.MeshStandardMaterial({color:0xff9a4a,emissive:0x7a3000,emissiveIntensity:.6,roughness:.35,metalness:.3}),
- fireCore:new THREE.MeshBasicMaterial({color:0xffa040})};
+ fireCore:new THREE.MeshBasicMaterial({color:0xffa040}),
+ cliff:new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,flatShading:true,envMapIntensity:1.3,emissive:0x16466a,emissiveIntensity:.5}),
+ crystalA:new THREE.MeshStandardMaterial({color:0x9ff0ff,emissive:0x1a9fd8,emissiveIntensity:.95,roughness:.12,flatShading:true}),
+ crystalB:new THREE.MeshStandardMaterial({color:0xd6b8ff,emissive:0x7a3cf0,emissiveIntensity:1.0,roughness:.12,flatShading:true}),
+ fur:new THREE.MeshStandardMaterial({color:0xf4f6fa,roughness:.9}),
+ furDark:new THREE.MeshStandardMaterial({color:0x1c1a22,roughness:.6}),
+ paper:new THREE.MeshStandardMaterial({color:0xffd9a0,emissive:0xff8a30,emissiveIntensity:2.2,roughness:.6})};
 for(const k of ['deck','railWood','railDark','railSnow'])M[k].userData.gap=true;   // these get holes cut where the bridge is broken
 const msh=(geo,mat,cast=true,recv=true)=>{const m=new THREE.Mesh(geo,mat);m.castShadow=cast;m.receiveShadow=recv;return m};
 
@@ -575,16 +609,17 @@ function groundAt(x,s){let h=0,hole=false,kick=false;
 const SPAN=400,BEHIND=14;
 const _m=new THREE.Matrix4(),_q=new THREE.Quaternion(),_e=new THREE.Euler(),_v=new THREE.Vector3(),_s=new THREE.Vector3();
 const decor=[];
-function addDecor(geo,mat,items,{cast=true,recv=true,gap=false,scenery=false}={}){const im=new THREE.InstancedMesh(geo,mat,items.length);im.castShadow=cast;im.receiveShadow=recv;im.frustumCulled=false;
-  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(im);const d={im,items,gap,scenery};decor.push(d);return d}
+function addDecor(geo,mat,items,{cast=true,recv=true,gap=false,scenery=false,map=null}={}){const im=new THREE.InstancedMesh(geo,mat,items.length);im.castShadow=cast;im.receiveShadow=recv;im.frustumCulled=false;
+  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(im);const d={im,items,gap,scenery,map};decor.push(d);return d}
 // tree/scenery density setting (少/中/多): items are randomly placed, so drawing the first N is a random subset
 const TREE_K=[.32,.66,1];let treeLv=store.get('trees',TOUCH?1:2);
 function applyTrees(){for(const d of decor)if(d.scenery)d.im.count=Math.max(1,Math.round(d.items.length*TREE_K[treeLv]))}
 function updateDecor(){const side=BOSS.cam>.05;   // side-view boss camera sits on the shore: clear the foreground
-  for(const d of decor){let i=0;for(const it of d.items){let z=dist-it.s;
+  for(const d of decor){if(d.map!=null){d.im.visible=d.map===MAP.id;if(!d.im.visible)continue}
+    let i=0;for(const it of d.items){let z=dist-it.s;
       while(z>BEHIND){it.s+=SPAN;z-=SPAN;if(it.re)it.re(it)}
       while(z<BEHIND-SPAN){it.s-=SPAN;z+=SPAN}                  // after a restart (dist back to 0) pull everything back into range
-      const hide=(d.gap&&inHole(it.s))||(side&&d.scenery&&it.x>4.5&&it.x<34);_e.set(it.rx||0,it.ry||0,it.rz||0);_q.setFromEuler(_e);
+      const hide=(d.gap&&inHole(it.s))||(side&&(d.scenery||d.map!=null)&&it.x>4.5&&it.x<(d.map!=null?90:34));_e.set(it.rx||0,it.ry||0,it.rz||0);_q.setFromEuler(_e);
       if(hide)_s.set(1e-4,1e-4,1e-4);else _s.set(it.sx||1,it.sy||1,it.sz||1);_m.compose(_v.set(it.x,it.y||0,z),_q,_s);d.im.setMatrixAt(i++,_m)}
     d.im.instanceMatrix.needsUpdate=true}}
 const DR=rng(2024),dens=1.3;   // built at the maximum; the tree setting trims what is drawn
@@ -622,13 +657,32 @@ function bergGeo(seed){const R=rng(seed),g=new THREE.IcosahedronGeometry(1,2).to
   g.computeVertexNormals();const n=g.attributes.normal,col=[];for(let k=0;k<p.count;k++){const up=n.getY(k);if(up>.45)col.push(.96,.98,1);else{const v=.82+R()*.18;col.push(.62*v,.84*v,.97*v)}}
   g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));return g}
 const reShore=(min,max)=>it=>{it.x=min+DR()*(max-min);it.ry=DR()*6.28;const s=.7+DR()*.8;it.sx=it.sz=s;it.sy=s*(.85+DR()*.4)};
-{const items=[];for(let k=0;k<Math.round(170*dens);k++){const it={s:DR()*SPAN};const near=DR()<.35;(near?reShore(7,16):reShore(10,90))(it);it.re=reShore(7,90);items.push(it)}addDecor(pineGeo(5),M.vcol,items,{scenery:true})}
+{const items=[];for(let k=0;k<Math.round(170*dens);k++){const it={s:DR()*SPAN};const near=DR()<.35;(near?reShore(7,16):reShore(10,90))(it);it.re=reShore(7,90);items.push(it)}addDecor(pineGeo(5),M.vcol,items,{scenery:true,map:0})}
 {const items=[];for(let k=0;k<Math.round(110*dens);k++){const it={s:DR()*SPAN};reShore(5.5,40)(it);it.sy*=.6;it.re=o=>{reShore(5.5,40)(o);o.sy*=.6};items.push(it)}addDecor(rockGeo(3),M.vcol,items,{scenery:true})}
 {const g=new THREE.SphereGeometry(1,16,10,0,Math.PI*2,0,Math.PI/2);const items=[];for(let k=0;k<Math.round(90*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=5+DR()*60;o.sx=2+DR()*4;o.sz=2+DR()*5;o.sy=.4+DR()*.7;o.y=-.15;o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(g,M.snowCap,items,{cast:false,scenery:true})}
 // the sea side: floes near the pier, drifting ice chunks, and real icebergs further out
 {const g=new THREE.CylinderGeometry(1,1.08,.35,7);const items=[];for(let k=0;k<Math.round(90*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-6.5-DR()*(DR()<.55?16:100);o.y=SEA_Y+.05;o.sx=.8+DR()*3.5;o.sz=.8+DR()*3;o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(g,M.snowCap,items,{cast:false,scenery:true})}
 {const items=[];for(let k=0;k<Math.round(40*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-8-DR()*40;o.y=SEA_Y-.15;const s=.6+DR()*1.4;o.sx=s*(1+DR());o.sy=s*(.5+DR()*.6);o.sz=s*(1+DR());o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(rockGeo(17,.25,[.62,.84,.97]),M.berg,items,{cast:false,scenery:true})}
 {const items=[];for(let k=0;k<Math.round(26*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-45-DR()*150;o.y=SEA_Y-.4;const s=3+DR()*5.5;o.sx=s*(1.2+DR()*.8);o.sy=s*(.45+DR()*.45);o.sz=s*(1.1+DR()*.6);o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(bergGeo(23),M.berg,items,{cast:false,scenery:true})}
+// ---- aurora glacier canyon (map 1): a towering ice wall close on the shore side, a second wall across the fjord, glowing crystals in between ----
+function cliffGeo(seed){const g=new THREE.BoxGeometry(1,1,1,3,5,3).translate(0,.5,0).toNonIndexed(),p=g.attributes.position,h=(x,y,z)=>{const v=Math.sin(x*12.9+y*78.2+z*37.7+seed)*43758.5;return v-Math.floor(v)};
+  for(let k=0;k<p.count;k++){let x=p.getX(k),y=p.getY(k),z=p.getZ(k);const j=h(x,y,z),j2=h(z,x,y),tp=1-.38*y;
+    if(y>.99)y=.68+.32*h(x,0,z);                     // jagged skyline
+    else if(y>.01){x+=(j-.5)*.16;z+=(j2-.5)*.16}
+    p.setXYZ(k,x*tp,y-.04,z*tp)}
+  g.computeVertexNormals();const n=g.attributes.normal,col=[],R=rng(seed);
+  for(let f=0;f<p.count;f+=3){const up=n.getY(f),y=(p.getY(f)+p.getY(f+1)+p.getY(f+2))/3,v=.82+R()*.18,st=R()<.18?.25:0;
+    const c=up>.45?[.95,.97,1]:[lerp(.16,.6,y)*v+st,lerp(.4,.84,y)*v+st*.6,lerp(.62,.98,y)*v];for(let q=0;q<3;q++)col.push(...c)}
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));return g}
+function crystalGeo(){const parts=[],sp=(r,h,x,z,tx,tz)=>parts.push(new THREE.ConeGeometry(r,h,6,1).translate(0,h/2-.1,0).rotateX(tx).rotateZ(tz).translate(x,0,z));
+  sp(.34,2.3,0,0,0,0);sp(.26,1.6,.3,.1,.15,-.5);sp(.24,1.4,-.28,.15,.2,.55);sp(.2,1.1,.05,-.3,-.6,.1);sp(.18,.9,-.1,.35,.65,-.1);return mergeGeometries(parts)}
+{const wall=(n,f)=>{const items=[];for(let k=0;k<n;k++){const it={s:(k+DR()*.6)*SPAN/n,ry:(DR()-.5)*.5};f(it);items.push(it)}return items};
+ addDecor(cliffGeo(4),M.cliff,wall(44,o=>{o.x=20+DR()*6;o.sx=11+DR()*5;o.sz=12+DR()*9;o.sy=15+DR()*20}),{cast:false,map:1});
+ addDecor(cliffGeo(9),M.cliff,wall(26,o=>{o.x=44+DR()*22;o.sx=22+DR()*10;o.sz=22+DR()*10;o.sy=42+DR()*36}),{cast:false,recv:false,map:1});
+ addDecor(cliffGeo(15),M.cliff,wall(30,o=>{o.x=-78-DR()*26;o.sx=24+DR()*12;o.sz=22+DR()*10;o.sy=30+DR()*34}),{cast:false,recv:false,map:1});
+ const cg=crystalGeo(),cry=(n,seaK)=>{const items=[];for(let k=0;k<n;k++){const it={s:DR()*SPAN},f=o=>{const sea=DR()<seaK,big=DR()<.25;o.x=sea?-7-DR()*30:big?10+DR()*3:4.9+DR()*5;o.y=sea?SEA_Y-.3:-.05;
+     const s=sea?1+DR()*1.6:big?1.8+DR()*1.4:.5+DR()*.9;o.sx=o.sz=s;o.sy=s*(.8+DR()*.5);o.ry=DR()*6.28};f(it);it.re=f;items.push(it)}return items};
+ addDecor(cg,M.crystalA,cry(46,.35),{cast:false,recv:false,scenery:true,map:1});addDecor(cg,M.crystalB,cry(28,.35),{cast:false,recv:false,scenery:true,map:1})}
 // cabins with warm windows (few, recycled)
 const cabins=[];
 {function cabin(seed){const R=rng(seed),g=new THREE.Group();const w=3+R()*1.5,d=3+R(),h=2.2;
@@ -637,7 +691,7 @@ const cabins=[];
   const win=new THREE.MeshStandardMaterial({color:0xffd9a0,emissive:0xff9a40,emissiveIntensity:1.6});for(const x of[-w/4,w/4]){const wm=msh(new THREE.PlaneGeometry(.6,.7),win,false,false);wm.position.set(x,1.25,d/2+.01);g.add(wm);const wm2=wm.clone();wm2.rotation.y=-Math.PI/2;wm2.position.set(-w/2-.01,1.25,x*.8);g.add(wm2)}
   const ch=msh(new THREE.BoxGeometry(.45,1.3,.45),M.woodDark);ch.position.set(w*.22,h+1.1,0);g.add(ch);g.userData.win=win;g.rotation.y=-.4+R()*.8;scene.add(g);return g}
  for(let i=0;i<4;i++)cabins.push({g:cabin(i+1),s:40+i*100,x:14+DR()*18})}
-function updateCabins(){for(const c of cabins){let z=dist-c.s;while(z>BEHIND+10){c.s+=SPAN;c.x=13+DR()*25;z-=SPAN}while(z<BEHIND+10-SPAN){c.s-=SPAN;z+=SPAN}c.g.position.set(c.x,-.05,z);c.g.visible=!(BOSS.cam>.05&&c.x<40)}}
+function updateCabins(){for(const c of cabins){let z=dist-c.s;while(z>BEHIND+10){c.s+=SPAN;c.x=13+DR()*25;z-=SPAN}while(z<BEHIND+10-SPAN){c.s-=SPAN;z+=SPAN}c.g.position.set(c.x,-.05,z);c.g.visible=MAP.id===0&&!(BOSS.cam>.05&&c.x<40)}}
 // birds gliding over the sunset
 const birds=[];{const mat=new THREE.MeshBasicMaterial({color:0x2a1c2c,side:THREE.DoubleSide,fog:false});mat.userData.noBend=true;
   for(let i=0;i<7;i++){const b=new THREE.Group();for(const sx of[-1,1]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0, sx*1.6,.15,-.3, 0,0,-.7],3));b.add(new THREE.Mesh(g,mat))}
@@ -759,8 +813,41 @@ function waveUpd(o,dt,z){o.ps.forEach((p,i)=>{const t=G.t*1+i*1.3;p.flR.rotation
    bs.forEach((b,i)=>{b.position.copy(b.userData.p0);b.position.x+=Math.sin(G.t*1.3+i*2)*.12;b.position.y+=Math.sin(G.t*1.7+i)*.08;lp.setXYZ(i*2,0,0,0);lp.setXYZ(i*2+1,b.position.x,b.position.y-.6,b.position.z)});
    lp.needsUpdate=true;g.rotation.z=Math.sin(G.t*.8)*.06;if(rise>45)sightOff(o)}}}
 // weather sights: a heavier snowfall, and a rainbow over the sea (daytime only) in the far group, which turns with the road
+// ---- canyon-only sights (map 1): an arctic fox by the road, a polar bear on a floe, an igloo with a glowing door, three sky lanterns ----
+{const g=sightGroup(),f=new THREE.Group();f.scale.setScalar(1.5);g.add(f);
+ const b=msh(new THREE.SphereGeometry(.34,20,14),M.fur);b.scale.set(.85,1.05,1);b.position.y=.36;f.add(b);
+ const ch=msh(new THREE.SphereGeometry(.24,16,12),M.fur);ch.position.set(0,.5,.2);f.add(ch);
+ const sc=msh(new THREE.TorusGeometry(.2,.06,8,20).rotateX(Math.PI/2),M.scarf);sc.position.set(0,.7,.2);f.add(sc);
+ const hd=new THREE.Group();hd.position.set(0,.88,.22);f.add(hd);hd.add(msh(new THREE.SphereGeometry(.23,20,14),M.fur));
+ const sn=msh(new THREE.ConeGeometry(.11,.24,10).rotateX(Math.PI/2),M.fur);sn.position.set(0,-.05,.24);hd.add(sn);
+ const ns=msh(new THREE.SphereGeometry(.035,8,6),M.furDark,false,false);ns.position.set(0,-.04,.37);hd.add(ns);
+ for(const sx of[-1,1]){const e=msh(new THREE.ConeGeometry(.08,.2,4),M.fur);e.position.set(sx*.13,.24,-.02);e.rotation.z=-sx*.2;hd.add(e);
+   const ey=msh(new THREE.SphereGeometry(.03,8,6),M.furDark,false,false);ey.position.set(sx*.09,.04,.2);hd.add(ey);
+   const leg=msh(new THREE.CylinderGeometry(.055,.05,.4,8),M.fur);leg.position.set(sx*.12,.2,.3);f.add(leg)}
+ const tl=new THREE.Group();tl.position.set(0,.18,-.28);tl.rotation.x=.5;f.add(tl);const tm=msh(new THREE.SphereGeometry(.17,14,10),M.fur);tm.scale.set(1,1,2.6);tm.position.set(0,.1,-.36);tl.add(tm);
+ g.rotation.y=-.9;
+ SIGHT.fox={g,map:1,x:6.2,say:['fox','foxWhite'],bye:'byeFox',upd(o,dt,z){tl.rotation.y=Math.sin(G.t*6)*.5;hd.rotation.z=Math.sin(G.t*1.3)*.25;hd.rotation.y=Math.sin(G.t*.7)*.3}}}
+{const g=sightGroup(),floe=msh(new THREE.CylinderGeometry(3.4,3.6,.45,9),M.snowCap,false,true);floe.position.y=SEA_Y+.05;g.add(floe);
+ const B=new THREE.Group();B.position.y=SEA_Y+.27;B.scale.setScalar(1.7);g.add(B);
+ const bd=msh(new THREE.SphereGeometry(1,24,16),M.fur);bd.scale.set(1.05,.62,.6);bd.position.y=.95;B.add(bd);
+ const hd=new THREE.Group();hd.position.set(1.05,1.25,0);B.add(hd);hd.add(msh(new THREE.SphereGeometry(.4,20,14),M.fur));
+ const sn=msh(new THREE.SphereGeometry(.2,14,10),M.fur);sn.scale.set(1.4,.8,.9);sn.position.set(.36,-.08,0);hd.add(sn);
+ const ns=msh(new THREE.SphereGeometry(.07,8,6),M.furDark,false,false);ns.position.set(.62,-.04,0);hd.add(ns);
+ for(const sz of[-1,1]){const e=msh(new THREE.SphereGeometry(.11,10,8),M.fur);e.position.set(-.08,.36,sz*.26);hd.add(e);
+   const ey=msh(new THREE.SphereGeometry(.045,8,6),M.furDark,false,false);ey.position.set(.3,.12,sz*.2);hd.add(ey);
+   for(const lx of[-.6,.6]){const l=msh(new THREE.CylinderGeometry(.2,.22,.8,10),M.fur);l.position.set(lx,.4,sz*.32);B.add(l)}}
+ g.rotation.y=-.7;
+ SIGHT.bear={g,map:1,x:-13,say:['bear','bearBig'],upd(o,dt,z){bd.scale.y=.62*(1+.04*Math.sin(G.t*2));hd.rotation.y=Math.sin(G.t*.8)*.5;hd.rotation.z=Math.sin(G.t*1.7)*.1}}}
+{const g=sightGroup(),r=2.3,lm=new THREE.MeshStandardMaterial({color:0x9fbcdc,roughness:.6});g.add(msh(new THREE.SphereGeometry(r,28,14,0,Math.PI*2,0,Math.PI/2),M.snowCap));
+ for(const y of[.55,1.1,1.6,2.0]){const t=msh(new THREE.TorusGeometry(Math.sqrt(r*r-y*y)+.01,.025,4,40).rotateX(Math.PI/2),lm,false,false);t.position.y=y;g.add(t)}
+ const tun=msh(new THREE.CylinderGeometry(.85,.85,1.4,18).rotateZ(Math.PI/2),M.snowCap);tun.position.x=-r;g.add(tun);
+ const door=msh(new THREE.CircleGeometry(.64,18).rotateY(-Math.PI/2),M.paper,false,false);door.position.x=-r-.71;g.add(door);
+ g.rotation.y=.5;g.position.y=-.08;SIGHT.igloo={g,map:1,x:9.6,say:['igloo','iglooRound'],upd(){}}}
+{const g=sightGroup(),lg=new THREE.CylinderGeometry(.3,.2,.5,10,1,true),ls=[0,1,2].map(i=>{const m=msh(lg,M.paper,false,false);g.add(m);return m});M.paper.side=THREE.DoubleSide;
+ SIGHT.lanterns={g,map:1,x:6.3,move:.4,say:['lanterns','lanternsUp'],upd(o,dt,z){let top=0;ls.forEach((m,i)=>{const rise=Math.max(0,o.t-2.5-i*.9)*.9;top=Math.max(top,rise);
+   m.position.set((i-1)*.9+Math.sin(G.t*.9+i*2)*.25*Math.min(1,rise),.35+rise,(i-1)*.3);m.rotation.z=Math.sin(G.t*1.1+i)*.08});if(top>40)sightOff(o)}}}
 SIGHT.snow={weather:true,life:32,say:['snowing','snowing']};
-SIGHT.rainbow={weather:true,life:40,say:['rainbow','rainbowC']};
+SIGHT.rainbow={weather:true,map:0,life:40,say:['rainbow','rainbowC']};
 const bowMat=new THREE.ShaderMaterial({uniforms:{uA:{value:0}},transparent:true,depthWrite:false,fog:false,
   vertexShader:'varying vec2 vP;void main(){vP=position.xy;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
   fragmentShader:`uniform float uA;varying vec2 vP;vec3 hue(float h){return clamp(abs(mod(h*6.+vec3(0.,4.,2.),6.)-3.)-1.,0.,1.);}
@@ -770,7 +857,8 @@ const SIGHT_KINDS=Object.keys(SIGHT),SIGHT_TALK=[...SIGHT_KINDS].sort((a,b)=>!!S
 function sightOff(o){o.on=false;if(o.g)o.g.visible=false}
 function sightsReset(){for(const k in SIGHT)sightOff(SIGHT[k]);SG.t=8;SG.recent.length=0}
 function spawnSight(){const e=elevAt(dist);
-  const ok=SIGHT_KINDS.filter(k=>!SIGHT[k].on&&!SG.recent.includes(k)&&(k!=='rainbow'||e>12));if(!ok.length)return;
+  let ok=SIGHT_KINDS.filter(k=>!SIGHT[k].on&&!SG.recent.includes(k)&&(SIGHT[k].map==null||SIGHT[k].map===MAP.id)&&(k!=='rainbow'||e>12));if(!ok.length)return;
+  const own=ok.filter(k=>SIGHT[k].map===1);if(own.length&&Math.random()<.6)ok=own;   // in the canyon its own sights come up more often
   const k=ok[Math.random()*ok.length|0],o=SIGHT[k];SG.recent.push(k);if(SG.recent.length>4)SG.recent.shift();
   Object.assign(o,{on:true,t:0,i:0,lastT:-99,byed:false,spT:1});if(o.g){o.s=dist+(o.ahead||90);o.g.visible=true}}
 // a new sight waits for a quiet moment, so its hello is not lost behind a sentence that is still playing
@@ -938,6 +1026,40 @@ function makeBurst(n,col,add){const pos=new Float32Array(n*3),sz=new Float32Arra
 const sparks=makeBurst(160,0xffd070,true),puffs=makeBurst(220,0xf4f6ff,false);
 function emit(B,x,y,z,n,spd,up,life,size){for(let k=0;k<n;k++){const p=B.parts[B.i=(B.i+1)%B.n];const a=Math.random()*6.28,r=Math.random()*spd;
   Object.assign(p,{life,max:life,x,y,z,vx:Math.cos(a)*r,vy:up*(.4+Math.random()),vz:Math.sin(a)*r,s:size*(.6+Math.random()*.8)})}}
+function emitRing(B,x,y,z,n,spd,life,size){for(let k=0;k<n;k++){const p=B.parts[B.i=(B.i+1)%B.n],a=k/n*6.28;Object.assign(p,{life,max:life,x,y,z,vx:Math.cos(a)*spd,vy:.7,vz:Math.sin(a)*spd,s:size})}}
+// footprints (v0.12): a dent in the snow at every step; they scroll away behind in under a second
+const FP_N=24,fpIM=new THREE.InstancedMesh(new THREE.CircleGeometry(.5,10).rotateX(-Math.PI/2).scale(.15,1,.22),new THREE.MeshStandardMaterial({color:0x3c4c6c,roughness:.9,transparent:true,opacity:.38,depthWrite:false}),FP_N);
+fpIM.frustumCulled=false;fpIM.count=0;scene.add(fpIM);const prints=[];let fpSide=1;
+function footprint(){prints.push({x:PL.x+fpSide*.13,y:PL.y+.02,s:dist});fpSide=-fpSide;if(prints.length>FP_N)prints.shift()}
+function updateFootprints(){while(prints.length&&dist-prints[0].s>BEHIND)prints.shift();prints.forEach((f,i)=>{_m.compose(_v.set(f.x,f.y,dist-f.s),_q.identity(),_s.set(1,1,1));fpIM.setMatrixAt(i,_m)});fpIM.count=prints.length;fpIM.instanceMatrix.needsUpdate=true}
+// fireworks (v0.12): coloured shells bursting over the sea — beating the dragon, arriving on a new map, a new record
+const FW_N=480,FW_COL=[[1,.35,.3],[1,.8,.3],[.35,.9,1],[.6,1,.45],[1,.5,.9],[.75,.55,1]],fwP=Array.from({length:FW_N},()=>({life:0})),FWQ=[];let fwI=0,fwOn=0;
+const fwGeo=new THREE.BufferGeometry();fwGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(FW_N*3),3));fwGeo.setAttribute('aS',new THREE.BufferAttribute(new Float32Array(FW_N),1));
+fwGeo.setAttribute('aA',new THREE.BufferAttribute(new Float32Array(FW_N),1));fwGeo.setAttribute('aC',new THREE.BufferAttribute(new Float32Array(FW_N*3),3));
+const fwPts=new THREE.Points(fwGeo,new THREE.ShaderMaterial({uniforms:{uSize:{value:30}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  vertexShader:'attribute float aS,aA;attribute vec3 aC;uniform float uSize;varying float vA;varying vec3 vC;void main(){vec4 mv=viewMatrix*modelMatrix*vec4(position,1.);gl_PointSize=uSize*aS/-mv.z;vA=aA;vC=aC;gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'varying float vA;varying vec3 vC;void main(){float a=smoothstep(.5,0.,length(gl_PointCoord-.5))*vA;gl_FragColor=vec4(vC*1.25,a);}'}));
+fwPts.frustumCulled=false;fwPts.visible=false;scene.add(fwPts);
+function fireworks(n,gap=.45){for(let i=0;i<n;i++)FWQ.push({t:i*gap+Math.random()*.15})}
+function fwBurst(){const side=BOSS.cam>.5,c=FW_COL[Math.random()*FW_COL.length|0];   // in the dragon's side view they go off over the sea behind the fight
+  const x=side?-10-Math.random()*14:-17+Math.random()*26,y=side?7+Math.random()*5:9+Math.random()*7,z=side?-9+Math.random()*16:-30-Math.random()*24;
+  for(let k=0;k<70;k++){const p=fwP[fwI=(fwI+1)%FW_N],u=Math.random()*2-1,a=Math.random()*6.28,q=Math.sqrt(1-u*u),v=4.5+Math.random()*3,life=1.1+Math.random()*.6;
+    Object.assign(p,{life,max:life,x,y,z,vx:Math.cos(a)*q*v,vy:u*v+1.5,vz:Math.sin(a)*q*v,s:side?9:11,r:c[0],g:c[1],b:c[2]})}
+  fwOn=1.8;sfx('boom');VO.fwT=G.t}
+function updateFireworks(dt){for(let i=FWQ.length-1;i>=0;i--)if((FWQ[i].t-=dt)<=0){FWQ.splice(i,1);fwBurst()}
+  if(fwOn<=0){fwPts.visible=false;return}fwOn-=dt;fwPts.visible=true;const pos=fwGeo.attributes.position,sz=fwGeo.attributes.aS,al=fwGeo.attributes.aA,cl=fwGeo.attributes.aC,dr=Math.exp(-1.7*dt);
+  fwP.forEach((p,i)=>{if(p.life>0){p.life-=dt;p.vx*=dr;p.vy=p.vy*dr-3.2*dt;p.vz*=dr;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;pos.setXYZ(i,p.x,p.y,p.z);sz.setX(i,p.s);cl.setXYZ(i,p.r,p.g,p.b);
+      al.setX(i,Math.min(1,p.life/p.max*1.7)*(.75+.25*Math.sin(p.life*40+i)))}else al.setX(i,0)});
+  pos.needsUpdate=sz.needsUpdate=al.needsUpdate=cl.needsUpdate=true}
+// shooting stars (v0.12): now and then one streaks across the night sky
+const meteor=(()=>{const[c,g]=cvs(128,8),gr=g.createLinearGradient(0,0,128,0);gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.8,'rgba(255,255,255,.7)');gr.addColorStop(1,'#fff');g.fillStyle=gr;g.fillRect(0,2,128,4);
+  const mat=new THREE.MeshBasicMaterial({map:tex(c,{rep:false}),color:0xdff0ff,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});mat.userData.noBend=true;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(1,1).translate(-.5,0,0),mat);m.visible=false;m.frustumCulled=false;m.renderOrder=-3;scene.add(m);return m})();
+const MET={t:5,on:false,u:0,x:0,y:0,a:0};
+function updateMeteor(dt){if(MET.on){MET.u+=dt/.9;if(MET.u>=1){MET.on=false;meteor.visible=false;return}
+    const d=MET.u*440,k=Math.sin(MET.u*Math.PI);meteor.position.set(camera.position.x+MET.x+Math.cos(MET.a)*d,MET.y+Math.sin(MET.a)*d,camera.position.z-800);meteor.rotation.z=MET.a;meteor.scale.set(80+k*130,5,1);meteor.material.opacity=k;return}
+  if(PAL.night<.5||BOSS.cam>0)return;MET.t-=dt;
+  if(MET.t<=0){const left=Math.random()<.5;Object.assign(MET,{t:6+Math.random()*9,on:true,u:0,x:-300+Math.random()*460+(left?120:-120),y:190+Math.random()*100,a:left?Math.PI+.3+Math.random()*.3:-.3-Math.random()*.3});meteor.visible=true;meteor.material.opacity=0;VO.starT=G.t}}
 function updateBurst(B,dt,scroll){const pos=B.g.attributes.position,sz=B.g.attributes.aS,al=B.g.attributes.aA;
   B.parts.forEach((p,i)=>{if(p.life>0){p.life-=dt;p.vy+=B.grav*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=(p.vz+scroll)*dt}pos.setXYZ(i,p.x,p.y,p.z);sz.setX(i,p.s);al.setX(i,p.life>0?Math.min(1,p.life/p.max*1.6):0)});
   pos.needsUpdate=sz.needsUpdate=al.needsUpdate=true}
@@ -995,7 +1117,7 @@ function shootFireball(aim,spread,spd){DRG.mouth.getWorldPosition(_w);const f=ge
   f.v.set(0,aim.y-_w.y,aim.z-_w.z).normalize();const a=spread,c=Math.cos(a),s=Math.sin(a);const vy=f.v.y*c-f.v.z*s,vz=f.v.y*s+f.v.z*c;f.v.set(0,vy,vz).multiplyScalar(spd);sfx('fire')}
 function hitPenguin(){if(BOSS.inv>0||G.state!=='run')return;BOSS.hearts--;BOSS.inv=1.6;G.shake=.45;sfx('hurt');hearts();if(BOSS.hearts===1)cheer('last',null,2);else if(BOSS.hearts>1)cheer('hurt');emit(sparks,0,BOSS.py+.6*PEN_S,BOSS.pz,14,3,2,.5,1.8);if(BOSS.hearts<=0)crash('boss')}
 function damageBoss(p){BOSS.hp--;DRG.flash=.12;emit(sparks,p.x,p.y,p.z,8,2.5,2,.4,1.6);sfx('bossHit');$('bossUI').querySelector('b').style.width=Math.max(0,BOSS.hp/BOSS.max*100)+'%';if(BOSS.hp===Math.floor(BOSS.max/2))cheer('half');
-  if(BOSS.hp<=0){BOSS.phase='defeat';BOSS.t=0;const bonus=30+20*BOSS.level;G.coins+=bonus;updateHUD();banner('击败恶龙！',`奖励 ${bonus} 金币`);sfx('bossDie');cheer('win',null,2);VO.brave=true;
+  if(BOSS.hp<=0){BOSS.phase='defeat';BOSS.t=0;const bonus=30+20*BOSS.level;G.coins+=bonus;updateHUD();banner('击败恶龙！',`奖励 ${bonus} 金币`);sfx('bossDie');cheer('win',null,2);VO.brave=true;fireworks(8);
     for(const f of FB){f.on=false;f.g.visible=false}DRG.fallV=4;DRG.splashed=false}}
 function updateDragonAnim(dt){const D=DRG,t=G.t;for(const w of D.wings){w.p.rotation.z=w.sx*(Math.sin(t*4.2)*.65+.15);w.p.rotation.x=Math.sin(t*4.2+1)*.12}
   D.tail.forEach((g,i)=>{g.rotation.y=Math.sin(t*2.2-i*.6)*.18;g.rotation.x=Math.sin(t*1.7-i*.5)*.06});D.neck.forEach((g,i)=>g.rotation.x=Math.sin(t*1.6+i)*.08);
@@ -1040,7 +1162,7 @@ function updateBoss(dt){
    D.root.rotation.z+=dt*1.6;D.root.rotation.x+=dt*.8;
     if(Math.random()<.35)emit(sparks,P.x,P.y+(Math.random()-.5)*2,P.z+(Math.random()-.5)*3,6,3,2,.6,2);
     if(!DRG.splashed&&P.y<SEA_Y){DRG.splashed=true;D.root.visible=false;emit(puffs,P.x,SEA_Y+.2,P.z,60,4,6,1.2,3.6);sfx('splash')}
-    if(BOSS.t>2.8){BOSS.phase='transOut';BOSS.t=0;$('bossUI').classList.remove('on');$('hearts').classList.remove('on')}}
+    if(BOSS.t>2.8){BOSS.phase='transOut';BOSS.t=0;switchMap(1-MAP.id);$('bossUI').classList.remove('on');$('hearts').classList.remove('on')}}
   else if(BOSS.phase==='transOut'){BOSS.cam=1-smooth(0,1,BOSS.t/1.8);BOSS.py=damp(BOSS.py,0,3,dt);BOSS.pz=damp(BOSS.pz,0,3,dt);
     if(BOSS.t>1.8){BOSS.phase='none';BOSS.cam=0;Object.assign(PL,{y:0,vy:0,air:false,x:0,lane:1});nextS=dist+60;BOSS.next+=2000;BOSS.level++;D.root.visible=false}}
   if(D.root.visible)updateDragonAnim(dt);
@@ -1087,6 +1209,8 @@ function sfx(k){if(!AU.ctx||!AU.sfxOn)return;const t=AU.ctx.currentTime;
   if(k==='boost'){noise(t,.6,300,4000,.35);[523,784,1047].forEach((f,i)=>tone(f,t+i*.05,.3,'sawtooth',.06,null,f*1.5));return}
   if(k==='fly'){[784,988,1175,1568,1976].forEach((f,i)=>tone(f,t+i*.06,.5,'triangle',.1));noise(t,.8,2000,6000,.12,'highpass');return}
   if(k==='roar'){noise(t,1.1,500,120,.55,'lowpass',2);tone(110,t,1.0,'sawtooth',.18,null,55);tone(82,t+.05,1.0,'square',.08,null,41);return}
+  if(k==='boom'){noise(t,.45,900,120,.32,'lowpass');tone(95,t,.3,'sine',.25,null,45);noise(t+.1,.7,5200,2600,.07,'highpass');return}
+  if(k==='whoosh'){noise(t,1.3,300,3200,.3);noise(t+.2,1.2,5000,900,.12,'highpass');return}
   if(k==='pew'){tone(880,t,.08,'sine',.07,null,1320);return}
   if(k==='fire'){noise(t,.35,1500,300,.22,'bandpass',.8);tone(160,t,.25,'sawtooth',.05,null,80);return}
   if(k==='smash'){noise(t,.4,1600,180,.45,'lowpass');tone(170,t,.28,'square',.12,null,55);[660,990,1320].forEach((f,i)=>tone(f,t+.04+i*.04,.12,'triangle',.07));return}
@@ -1136,6 +1260,8 @@ const LINES={   // [中文, English]; {d} = metres, {c} = coins
   dawn:[['天亮啦，新的一天！','Good morning! A new day!']],
   over:[['没关系，再来一次！',"Nice try! Let's try again!"],['差一点点，下次一定行！','So close! You can do it next time!']],
   overRec:[['破纪录啦，你真棒！','New best score! Well done!']],
+  mapIce:[['哇，极光冰川峡谷！','Wow! The aurora canyon!'],['新的地方，好漂亮！','A new place! So pretty!']],
+  mapSea:[['回到海边啦！','Back to the sea!']],
   overBoss:[['恶龙太凶了，下次打败它！','The dragon was tough. Beat it next time!']]};
 // 学习短句（v0.10）：RAZ AA 级的短句型（I see a… / Look! A… / I can… / The … is …），只说屏幕上正在发生的事；飞行时安全，说长一点的句子
 const LEARN={
@@ -1185,10 +1311,25 @@ const LEARN={
   balloonsC:[['红色、黄色、蓝色！','Red, yellow, blue!'],['气球飞上天了！','The balloons go up!']],
   snowing:[['下雪啦！','It is snowing!'],['雪花飘下来了。','Snow is falling down.'],['雪花，雪花，白白的雪花！','Snow, snow, white snow!']],
   rainbow:[['看，彩虹！','Look! A rainbow!'],['彩虹真漂亮！','The rainbow is pretty!']],
-  rainbowC:[['红、橙、黄、绿、蓝！','Red, orange, yellow, green, blue!']]};
+  rainbowC:[['红、橙、黄、绿、蓝！','Red, orange, yellow, green, blue!']],
+  fox:[['看，一只小狐狸！','Look! A fox!'],['你好，小狐狸！','Hello, fox!']],
+  foxWhite:[['狐狸是白色的。','The fox is white.']],
+  byeFox:[['拜拜，小狐狸！','Bye-bye, fox!']],
+  bear:[['看，一只北极熊！','Look! A polar bear!'],['你好，大熊！','Hello, bear!']],
+  bearBig:[['北极熊好大呀！','The bear is big!'],['北极熊是白色的。','The bear is white.']],
+  igloo:[['看，一座冰屋！','Look! An igloo!'],['我看到一座冰屋。','I see an igloo.']],
+  iglooRound:[['冰屋是圆的。','The igloo is round.'],['冰屋里很暖和。','It is warm inside.']],
+  lanterns:[['看，灯笼！','Look! Lanterns!'],['一、二、三个灯笼！','One, two, three lanterns!']],
+  lanternsUp:[['灯笼飞上天了。','The lanterns go up.'],['灯笼亮亮的。','The lanterns are bright.']],
+  aurora:[['看，极光！','Look! The aurora!'],['天空是绿色的。','The sky is green.'],['天上的光在跳舞！','The lights are dancing!']],
+  moon:[['我看到月亮！','I see the moon!'],['晚安，月亮！','Good night, moon!']],
+  crystal:[['冰晶亮晶晶！','The ice is shiny!'],['蓝色的冰，紫色的冰。','Blue ice. Purple ice.']],
+  wall:[['冰墙好高呀！','The ice wall is tall!'],['好多好多冰！','So much ice!']],
+  star:[['看，流星！','Look! A shooting star!'],['许个愿吧！','Make a wish!']],
+  fireworks:[['看，烟花！','Look! Fireworks!'],['砰！砰！砰！','Boom! Boom! Boom!']]};
 const LEARN_OB={snowman:'snowman',ice:'ice',crates:'crates',fence:'fence',gate1:'gate',gate3:'gate',plat:'plat',platR:'plat',kicker:'kicker'};
-const LEARN_CD={jump:25,slide:25,left:25,right:25,coin:40,fly:3,thanks:3,sun:90,morning:90,evening:90,night:90,cold:120,hungry:1e4,tired:1e4,brave:1e4};   // seconds before the same topic again (default 30)
-const LEARN_IDLE=['sea','birds','trees','snow','iceberg','me','facts'],LEARN_GAP={more:8,less:18};
+const LEARN_CD={star:60,fireworks:20,aurora:45,jump:25,slide:25,left:25,right:25,coin:40,fly:3,thanks:3,sun:90,morning:90,evening:90,night:90,cold:120,hungry:1e4,tired:1e4,brave:1e4};   // seconds before the same topic again (default 30)
+const LEARN_IDLE=['sea','birds','trees','snow','iceberg','me','facts'],LEARN_IDLE_ICE=['aurora','moon','crystal','wall','snow','me','facts'],LEARN_GAP={more:8,less:18};
 let LEARN_LV=store.get('learn','more');if(!LEARN_GAP[LEARN_LV])LEARN_LV=LEARN_LV==='off'?'off':'more';
 function pickVoices(){const vs=speechSynthesis.getVoices(),best=re=>{const c=vs.filter(v=>re.test(v.lang.replace('_','-')));
     return c.find(v=>/natural|neural|online/i.test(v.name))||c.find(v=>/xiaoxiao|xiaoyi|tingting|google|samantha|aria|jenny|zira/i.test(v.name))||c.find(v=>v.localService)||c[0]};
@@ -1237,6 +1378,7 @@ function learnTick(){if(VO.mode==='off'||LEARN_LV==='off'||BOSS.phase!=='none'||
     if(o.i===0&&z<-9)wait=true}
   if(wait)return;
   for(const k of SIGHT_TALK){const o=SIGHT[k];if(o.on&&o.weather&&o.i>0&&o.i<o.say.length&&wk(k)&&t-o.lastT>9&&t-VO.lastL>3){o.lastT=t;return learnSay(o.say[o.i++])}}
+  if(t-(VO.fwT??-99)<1.2&&ok('fireworks'))return learnSay('fireworks');if(t-(VO.starT??-99)<1.2&&ok('star'))return learnSay('star');
   if(PL.fly>0){if(PL.fly>2&&t-VO.lastL>3){if(VO.wings){VO.wings=false;learnSay('thanks')}else if(ok('fly'))learnSay('fly')}return}
   if(t-VO.lastL<LEARN_GAP[LEARN_LV])return;
   if(VO.brave){VO.brave=false;return learnSay('brave')}
@@ -1246,13 +1388,13 @@ function learnTick(){if(VO.mode==='off'||LEARN_LV==='off'||BOSS.phase!=='none'||
   for(const h of holes)if(!kickers.some(q=>Math.abs(q.s1-h.s0)<.5))see('gap',dist-h.s0);
   if(best)return learnSay(best);
   if(ok('dolphin'))for(const d of dolphins)if(d.on&&d.t>0){const z=dist-d.s;if(z>-50&&z<-4)return learnSay('dolphin')}
-  if(ok('house'))for(const c of cabins){const z=dist-c.s;if(z>-70&&z<-15)return learnSay('house')}
+  if(MAP.id===0&&ok('house'))for(const c of cabins){const z=dist-c.s;if(z>-70&&z<-15)return learnSay('house')}
   if(t-coinT<.4&&ok('coin'))return learnSay('coin');
   const e=elevAt(dist),am=amAt(dist)>.5;
-  const sit=dist>600&&ok('hungry')?'hungry':dist>1500&&ok('tired')?'tired':e<-4?(ok('night')?'night':ok('cold')?'cold':null):am&&e>0&&e<15?(ok('morning')?'morning':null):!am&&e<12?(ok('evening')?'evening':null):e>25&&ok('sun')?'sun':null;
+  const sit=dist>600&&ok('hungry')?'hungry':dist>1500&&ok('tired')?'tired':MAP.id===1?(ok('night')?'night':ok('cold')?'cold':null):e<-4?(ok('night')?'night':ok('cold')?'cold':null):am&&e>0&&e<15?(ok('morning')?'morning':null):!am&&e<12?(ok('evening')?'evening':null):e>25&&ok('sun')?'sun':null;
   if(sit)return learnSay(sit);
   if(t-VO.lastL<LEARN_GAP[LEARN_LV]+2)return;
-  const idle=LEARN_IDLE.filter(ok);if(idle.length)learnSay(idle[Math.random()*idle.length|0])}
+  const idle=(MAP.id===1?LEARN_IDLE_ICE:LEARN_IDLE).filter(ok);if(idle.length)learnSay(idle[Math.random()*idle.length|0])}
 // game-over card: the sentences heard this run (latest 8), tap one to hear it again
 function showLearned(){const L=$('learnList');L.textContent='';const hs=VO.heard.slice(-8);$('learnBox').style.display=hs.length?'':'none';
   for(const[zh,en]of hs){const b=document.createElement('button');b.className='lrn';b.innerHTML='<b></b><small></small>';b.firstChild.textContent=en;b.lastChild.textContent=zh;
@@ -1264,9 +1406,10 @@ function voReset(){Object.assign(VO,{last:-99,lastK:{},nextM:100,nextC:50,rec:fa
 function cheerTick(dt){if(VO.cheerT>0){VO.cheerT-=dt;if(VO.cheerT<=0)$('cheer').classList.remove('on')}if(G.state!=='run')return;
   const d=Math.floor(dist),calm=BOSS.phase==='none';
   if(d>=VO.nextM){if(calm)cheer(VO.nextM===100?'m100':'m',{d:VO.nextM});VO.nextM=VO.nextM<250?250:VO.nextM<500?500:VO.nextM+500;voPrefetch('m',{d:VO.nextM})}
-  if(!VO.rec&&G.best.d>=100&&d>G.best.d){VO.rec=true;cheer('record',null,2)}
+  if(!VO.rec&&G.best.d>=100&&d>G.best.d){VO.rec=true;cheer('record',null,2);fireworks(12,.5)}
   if(G.coins>=VO.nextC){if(calm)cheer('coins',{c:VO.nextC});VO.nextC=VO.nextC<100?100:VO.nextC+100;voPrefetch('coins',{c:VO.nextC})}
-  const e=elevAt(dist);if(VO.e!=null){if(VO.e>=7&&e<7)VO.day='sunset';else if(VO.e>=-4&&e<-4)VO.day='night';else if(VO.e<0&&e>=0)VO.day='dawn'}VO.e=e;
+  const e=elevAt(dist);if(MAP.id===1)VO.e=null;else{if(VO.e!=null){if(VO.e>=7&&e<7)VO.day='sunset';else if(VO.e>=-4&&e<-4)VO.day='night';else if(VO.e<0&&e>=0)VO.day='dawn'}VO.e=e}
+  if(MAP.hello&&calm&&!voBusy()){cheer(MAP.hello,null,2);MAP.hello=null}
   if(VO.day&&calm&&!voBusy()){cheer(VO.day);VO.day=null}
   learnTick()}
 function setAudio(k,on){AU[k==='music'?'music':'sfxOn']=on;store.set(k,on);if(AU.ctx)(k==='music'?AU.mus:AU.sfx).gain.setTargetAtTime(on?(k==='music'?.28:.8):0,AU.ctx.currentTime,.05)}
@@ -1277,7 +1420,7 @@ const PL={lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,ph:0,cr
 const SLIDE_TIME=.72,JUMP_V=10.4,GRAV=30,LAUNCH_V=11.5,FLY_Y=3.7,BOOST_T=5.5,FLY_T=8;
 const SMASH_COST=10,FLY_COST=50;   // coin abilities: belly-slide through an obstacle / buy a golden-wing flight
 function resetRun(){clearObs();coins.length=0;holes.length=plats.length=kickers.length=0;dist=0;nextS=60;nextItemS=320;R=rng((Date.now()^0x5bd1e995)>>>0);G.coins=0;G.speed=0;G.shake=0;G.told={};
-  for(const it of items)it.got=true;updateItems();clearBoss();
+  for(const it of items)it.got=true;updateItems();clearBoss();setMap(MAP.start);Object.assign(MAP,{sw:null,nextS:2000,hello:null});$('flash').classList.remove('on');prints.length=0;FWQ.length=0;
   Object.assign(CRV,{k:0,segK:0,segEnd:200,head:0});BEND.value=0;
   Object.assign(PL,{lane:1,x:0,y:0,vy:0,air:false,slideT:0,queueSlide:false,lean:0,crashSpin:0,onKick:false,boost:0,fly:0,invT:0});PG.stars.visible=false;PG.root.visible=true;PG.root.rotation.set(0,0,0);PG.root.scale.setScalar(1);
   for(const d of dolphins){d.on=false;d.m.visible=false}sightsReset();updateHUD(true)}
@@ -1375,6 +1518,18 @@ $('fsBtn').onclick=()=>{try{if(fsOn())(document.exitFullscreen||document.webkitE
 document.addEventListener('fullscreenchange',syncFs);document.addEventListener('webkitfullscreenchange',syncFs);syncFs();
 $('shotBtn').onclick=screenshot;$('linkBtn').onclick=copyLink;
 
+/* ======================= maps ======================= */
+function setMap(id){MAP.id=id;const d=DECK_TEX[id];M.deck.map=d.map;M.deck.normalMap=d.normalMap;M.deck.roughnessMap=d.roughnessMap;
+  seaMat.uniforms.uDeep.value.set(id?0x06203a:0x0f3248);seaMat.uniforms.uShallow.value.set(id?0x1c6688:0x2f7a88);SKY.uAur.value=id?1:0;gradePass.uniforms.uTone.value=id?.25:1;
+  envE=999;for(const k in SIGHT)sightOff(SIGHT[k]);SG.t=Math.max(SG.t,5);VO.e=null;VO.day=null}
+function switchMap(id){if(MAP.sw)return;MAP.sw={t:0,to:id,done:false};$('flash').classList.add('on');sfx('whoosh')}
+// white-out: the screen goes white, the map is swapped behind it, and it clears once the camera is back behind the penguin
+function updateMap(dt){const w=MAP.sw;
+  if(!w){if(G.state==='run'&&bossNext()===Infinity&&dist>=MAP.nextS){MAP.nextS+=2000;switchMap(1-MAP.id)}return}
+  w.t+=dt;if(!w.done&&w.t>.55){w.done=true;setMap(w.to)}
+  if(w.t>1&&BOSS.cam<.05){MAP.sw=null;$('flash').classList.remove('on');if(G.state!=='run')return;
+    banner(MAP.id?'极光冰川峡谷':'夕阳海岸',MAP.id?'来到了新的地方':'回到海边啦');MAP.hello=MAP.id?'mapIce':'mapSea';fireworks(10,.5)}}
+
 /* ======================= HUD ======================= */
 let hudD=-1,hudC=-1,hudP=-1;
 function updateHUD(force){const d=Math.floor(dist);if(d!==hudD||force){hudD=d;$('dist').firstChild.firstChild.nodeValue=d}
@@ -1394,7 +1549,7 @@ function updateVertical(dt){const gr=groundAt(PL.x,dist);
     else PL.y=gr.h;
     PL.onKick=gr.kick}
   if(PL.air){PL.vy-=GRAV*dt;PL.y+=PL.vy*dt;
-    if(!gr.hole&&PL.y<=gr.h&&PL.vy<=0){PL.y=gr.h;PL.air=false;PL.vy=0;sfx('land');emit(puffs,PL.x,PL.y+.05,.1,10,2,1,.5,1.6);if(PL.queueSlide){PL.queueSlide=false;PL.slideT=SLIDE_TIME;sfx('slide')}}
+    if(!gr.hole&&PL.y<=gr.h&&PL.vy<=0){PL.y=gr.h;PL.air=false;PL.vy=0;sfx('land');emit(puffs,PL.x,PL.y+.05,.1,8,2,1.2,.5,1.6);emitRing(puffs,PL.x,PL.y+.08,.1,14,3.4,.42,1.5);if(PL.queueSlide){PL.queueSlide=false;PL.slideT=SLIDE_TIME;sfx('slide')}}
     else if(gr.hole&&PL.y<SEA_Y+.55&&G.state==='run'){if(PL.invT>0||COIN)PL.vy=12;else crash('water')}}}
 // golden flight only ends once the next stretch of track is safe to land on
 function landingClear(){const reach=G.speed*.6+4;for(const h of holes)if(h.s1>dist-1&&h.s0<dist+reach)return false;
@@ -1418,7 +1573,7 @@ function updatePlayer(dt){const t=G.t,B=PG.body,bossFly=bossFlying()||(G.cause==
   if(G.state==='run'||G.state==='intro')updateVertical(dt);
   else if(G.state==='dead'&&G.cause==='water'){PL.vy=Math.max(PL.vy-GRAV*dt,-6);PL.y=Math.max(SEA_Y-2.4,PL.y+PL.vy*dt);if(PL.y<SEA_Y-.8)PG.root.visible=false}
   else if(G.state==='dead'&&PL.air){PL.vy-=GRAV*dt;PL.y=Math.max(groundAt(PL.x,dist).h,PL.y+PL.vy*dt)}
-  if(PL.slideT>0){PL.slideT-=dt;if(Math.random()<.6)emit(puffs,PL.x+(Math.random()-.5)*.4,PL.y+.05,.4,1,.6,.6,.45,1.2)}
+  if(PL.slideT>0){PL.slideT-=dt;emit(puffs,PL.x+(Math.random()-.5)*.5,PL.y+.08,.5,2,.9,1.5,.5,1.5)}   // belly slide throws up a tail of snow
   const run=G.state==='run'||G.state==='intro';PL.ph+=dt*(run?G.speed*.72:2.2);const s=Math.sin(PL.ph);
   const sliding=PL.slideT>0;
   let bodyY=run?Math.abs(s)*.06:Math.sin(t*2.2)*.012,rx=0,rz=run?s*.13:Math.sin(t*1.1)*.03,flap=run?.55+Math.sin(PL.ph*2)*.12:.18+Math.max(0,Math.sin(t*1.7))*.05;
@@ -1431,6 +1586,7 @@ function updatePlayer(dt){const t=G.t,B=PG.body,bossFly=bossFlying()||(G.cause==
   PG.flL.rotation.z=damp(PG.flL.rotation.z,flap,16,dt);PG.flR.rotation.z=-PG.flL.rotation.z;PG.flL.rotation.x=PG.flR.rotation.x=sliding?-1.2:0;
   PG.head.rotation.x=damp(PG.head.rotation.x,sliding?-1.1:(PL.air&&PL.fly<=0?.15:0),12,dt);
   const step=run&&!PL.air&&!sliding&&G.state!=='dead';
+  if(step&&(s>0)!==PL.fsg){PL.fsg=s>0;footprint();emit(puffs,PL.x,PL.y+.05,.3,PL.boost>0?5:2,PL.boost>0?1.4:.7,PL.boost>0?1.8:.8,.38,1.2)}   // each step: a footprint and a kick of snow (more when boosting)
   PG.ftL.position.z=.06+(step?s*.13:0);PG.ftR.position.z=.06-(step?s*.13:0);PG.ftL.position.y=.02+(step?Math.max(0,s)*.07:0);PG.ftR.position.y=.02+(step?Math.max(0,-s)*.07:0);
   PG.ftL.visible=PG.ftR.visible=!sliding;
   PG.root.position.set(PL.x,PL.y,0);
@@ -1497,14 +1653,14 @@ function updateAtmosphere(dt){const e=elevAt(dist),head=CRV.head+BOSS.cam*.7;   
   for(const m of mtnMats){_c1.copy(PAL.zen).lerp(PAL.hor,m.userData.layer?.62:.42).multiplyScalar(m.userData.layer?1.0:.82);m.color.copy(_c1)}
   envT+=dt;if((Math.abs(e-envE)>(e>12?3:.6)||Math.abs(head-envH)>.1)&&envT>.5){envT=0;bakeEnv(e,head)}}
 function updateWorld(dt,scroll){
-  deckT.map.offset.y=deckT.normalMap.offset.y=deckT.roughnessMap.offset.y=dist/DECK_TILE;
+  M.deck.map.offset.y=M.deck.normalMap.offset.y=M.deck.roughnessMap.offset.y=dist/DECK_TILE;
   snowT.map.offset.y=snowT.normalMap.offset.y=dist/20;
   updateDecor();updateCabins();updateDolphins(dt);updateSights(dt);updateItems();
   const gp=glowGeo.attributes.position;lampItems.forEach((it,i)=>gp.setXYZ(i,it.x,inHole(it.s)?-60:2.75,dist-it.s));gp.needsUpdate=true;
   const p=snowGeo.attributes.position;for(let i=0;i<snowN;i++){let x=p.getX(i)+Math.sin(G.t*.7+i)*.3*dt,y=p.getY(i)-(.9+snowSz[i]*.6)*dt,z=p.getZ(i)+(scroll*.9+1)*dt;
     if(y<0){y+=16}if(z>12){z-=70;x=(Math.random()-.5)*44}p.setXYZ(i,x,y,z)}p.needsUpdate=true;
   for(const b of birds){const u=b.userData;u.x+=u.v*dt;if(u.x>140)u.x=-140;const fl=Math.sin(G.t*4+u.ph)*.6;b.children[0].rotation.z=fl;b.children[1].rotation.z=-fl;b.position.set(u.x,u.y+Math.sin(G.t*.5+u.ph)*2,u.z);b.rotation.y=Math.PI/2}
-  updateBurst(sparks,dt,scroll);updateBurst(puffs,dt,scroll);
+  updateBurst(sparks,dt,scroll);updateBurst(puffs,dt,scroll);updateFootprints();updateFireworks(dt);updateMeteor(dt);
   if(hintT>0){hintT-=dt;if(hintT<=0)$('hint').classList.remove('on')}}
 const timeScale=()=>G.state==='title'?1:SUPER||COIN?SUPER_TS:EASY?EASY_TS:1;let bossCls=false;
 function step(dt){G.t+=dt;let scroll=0;
@@ -1513,7 +1669,7 @@ function step(dt){G.t+=dt;let scroll=0;
   else if(G.state==='dead'){G.deadT+=dt;G.speed=damp(G.speed,0,G.cause==='water'?7:4,dt);if(G.deadT>1.2&&$('over').classList.contains('hide')){$('over').classList.remove('hide');$('hud').classList.remove('on');document.body.classList.remove('running')}}
   if(G.state!=='paused'){
     if(G.state==='intro'||G.state==='run'||G.state==='dead'){scroll=G.speed;dist+=scroll*dt;if(G.state!=='dead'&&BOSS.phase==='none')spawnAhead()}
-    updateBoss(dt);updateCurve(dt,scroll);updatePlayer(dt);if(G.state==='run'&&!bossFlying())collide();updatePowerups(dt);
+    updateBoss(dt);updateMap(dt);updateCurve(dt,scroll);updatePlayer(dt);if(G.state==='run'&&!bossFlying())collide();updatePowerups(dt);
     updateObstacles();updateCoins();updateWorld(dt,scroll);updateCamera(dt);updateAtmosphere(dt);
     for(const r of ribbons)updateRibbon(r,Math.min(dt,1/30),G.state==='title'?1.6:G.speed*.9+2,G.t);
     if(G.state==='run'||G.state==='intro')updateHUD()}
@@ -1538,9 +1694,9 @@ let last=performance.now();
 function frame(now){requestAnimationFrame(frame);const real=Math.min(.25,(now-last)/1000);last=now;const dt=Math.min(real,1/20);
   step(dt*timeScale());composer.render();
   fpsAcc+=real;fpsN++;if(fpsAcc>=1){const f=fpsN/fpsAcc;adapt(f);if(showFps)$('fps').textContent=`${f.toFixed(0)} fps · ${Q.n} · ${prNow.toFixed(2)}x · v${VERSION}`;fpsAcc=fpsN=0}}
-updateAtmosphere(0);bakeEnv(elevAt(0));updateWorld(0,0);updateCamera(1);showBest();
+setMap(MAP.start);updateAtmosphere(0);bakeEnv(elevAt(0));updateWorld(0,0);updateCamera(1);showBest();
 requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);$('loading').classList.add('hide');$('title').classList.remove('hide')});
-window.__G={G,PL,CRV,step,act,startRun,toTitle,get dist(){return dist},set dist(v){dist=v},obstacles,coins,holes,plats,kickers,dolphins,decor,spawnPod,SIGHT,SG,renderer,composer,placeRow,rowGap,rowPlat,rowKicker,clearObs,
+window.__G={G,PL,CRV,step,act,startRun,toTitle,get dist(){return dist},set dist(v){dist=v},obstacles,coins,holes,plats,kickers,dolphins,decor,spawnPod,SIGHT,SG,renderer,composer,placeRow,rowGap,rowPlat,rowKicker,clearObs,MAP,setMap,switchMap,fireworks,MET,VO,
   set nextS(v){nextS=v},get nextS(){return nextS},BOSS,DRG,FB,FISH,KEY,items,addItem,addObs,buyFly,startBoss,crash,screenshot,openSettings,
   setMouseFire:v=>mouseFire=v,
   setQuality:k=>{store.set('quality',k);location.reload()}};
