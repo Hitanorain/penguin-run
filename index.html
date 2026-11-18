@@ -261,7 +261,7 @@ import {ShaderPass} from 'three/addons/postprocessing/ShaderPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const VERSION='0.13.2';
+const VERSION='0.14';
 const $=id=>document.getElementById(id);
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
 const damp=(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt));
@@ -323,7 +323,7 @@ const CRV={k:0,segK:0,segEnd:200,head:0};   // current curvature, target, where 
 const MAP={id:0,sw:null,nextS:2000,hello:null,bag:[0,1,2],bi:0,start:/[?&]map=([012])/.test(location.search)?+RegExp.$1:null};
 const MAP_INFO=[['夕阳海岸','回到海边啦','mapSea'],['极光冰川峡谷','来到了新的地方','mapIce'],['樱花春日湖畔','春天来啦','mapSpring']];
 const onMap=m=>m==null||m===MAP.id||m.length>0&&m.includes(MAP.id);   // a `map` tag is one id or a list of ids
-const BOSS={next:2000,level:1,phase:'none',t:0,cam:0,hp:1,max:1,hearts:3,inv:0,py:0,pz:0,shotT:0,sunK:0};   // dragon fight state (see updateBoss)
+const BOSS={next:2000,level:1,phase:'none',t:0,cam:0,hp:1,max:1,hearts:6,inv:0,py:0,pz:0,shotT:0,sunK:0};   // dragon fight state (see updateBoss)
 
 /* ======================= day palette =======================
    tables of coordinated colours keyed by sun elevation (degrees). KEYS is the evening (warm amber/violet), KEYS_AM the morning
@@ -587,28 +587,64 @@ const msh=(geo,mat,cast=true,recv=true)=>{const m=new THREE.Mesh(geo,mat);m.cast
 
 /* ======================= sea ======================= */
 const SEA_Y=-1.3;
-const seaMat=new THREE.ShaderMaterial({uniforms:Object.assign({uOff:{value:0},uDeep:{value:new THREE.Color(0x0f3248)},uShallow:{value:new THREE.Color(0x2f7a88)},uDay:{value:1},uBend:BEND},SKY),
- vertexShader:`uniform float uOff,uTime;varying vec3 vW;${BEND_GLSL}
-  float H(vec2 p){return sin(p.x*.17+uTime*.8)*.13+sin(p.y*.21-uTime*1.05+p.x*.06)*.11+sin((p.x+p.y)*.43+uTime*1.6)*.05;}
-  void main(){vec4 w=modelMatrix*vec4(position,1.);w.y+=H(vec2(w.x,w.z-uOff));vW=w.xyz;w.xyz=bendW(w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
- fragmentShader:`${NOISE}${SKYFN}uniform float uOff,uDay;uniform vec3 uDeep,uShallow;varying vec3 vW;
-  float H(vec2 p){return sin(p.x*.17+uTime*.8)*.13+sin(p.y*.21-uTime*1.05+p.x*.06)*.11+sin((p.x+p.y)*.43+uTime*1.6)*.05;}
-  void main(){vec2 p=vec2(vW.x,vW.z-uOff);float e=.3;
-   vec3 N=normalize(vec3(H(p-vec2(e,0))-H(p+vec2(e,0)),2.*e,H(p-vec2(0,e))-H(p+vec2(0,e))));
-   float dist=length(vW-cameraPosition);vec2 q=p*.8;vec2 f1=vec2(.3,.55)*uTime,f2=vec2(-.45,.2)*uTime;
-   float n0=vnoise(q+f1)+.5*vnoise(q*2.6+f2),nx=vnoise(q+vec2(.3,0)+f1)+.5*vnoise((q+vec2(.3,0))*2.6+f2),nz=vnoise(q+vec2(0,.3)+f1)+.5*vnoise((q+vec2(0,.3))*2.6+f2);
-   N=normalize(N+vec3(n0-nx,0.,n0-nz)*.8*(1.-smoothstep(20.,260.,dist)));
-   vec3 V=normalize(cameraPosition-vW);float fr=.02+.98*pow(clamp(1.-dot(N,V),0.,1.),5.);
-   vec3 R=reflect(-V,N);R.y=abs(R.y)+.01;R=normalize(R);vec3 refl=skyBase(R);
-   vec3 water=mix(uShallow,uDeep,smoothstep(10.,120.,dist))*(.15+.85*uDay);
-   float sss=pow(max(dot(V,-uSunDir),0.),4.)*.4;water+=uShallow*uSun*sss;
-   vec3 col=mix(water,refl,fr);
-   float rs=max(dot(R,uSunDir),0.);col+=uSun*(pow(rs,900.)*7.+pow(rs,140.)*.32+pow(rs,12.)*.03)*smoothstep(-.06,.02,uSunDir.y);   // soft glints, no blinding sun path
+// sea (v0.14): rolling swells heading for the shore. Sharp-crested waves (exp(k·(sin−1))) on a mesh that is dense near the camera,
+// turquoise light through the crests, foam on the crests and along the pier, a broad warm sun path; detail fades with distance so it never sparkles.
+// SEA_W rows: [dir x, dir z, wavelength, amplitude, sharpness]. seaH() in JS mirrors the vertex shader so floating things ride the waves.
+const SEA_W=[[.93,.37,34,.4,1.6],[.74,-.67,21,.22,1.8],[.98,.2,12.5,.11,2.2],[.5,.87,8,.06,2],[.86,-.51,5.2,.035,2]];
+const SEA_U={uOff:{value:0},uDeep:{value:new THREE.Color(0x0f3248)},uShallow:{value:new THREE.Color(0x2f7a88)},uDay:{value:1},uBend:BEND,uCalm:{value:1},uFoam:{value:1}};
+const SEA_GLSL=`uniform float uCalm;
+const int NW=${SEA_W.length};const vec4 WD[NW]=vec4[NW](${SEA_W.map(w=>`vec4(${w.slice(0,4).map(v=>v.toFixed(4)).join(',')})`).join(',')});
+const float WK[NW]=float[NW](${SEA_W.map(w=>w[4].toFixed(3)).join(',')});
+float seaEnv(float x){return uCalm*mix(.55,1.,smoothstep(-7.,-30.,x));}
+// height (x) and gradient (yz); fade>0 drops waves too small to resolve at this distance
+vec3 seaWaves(vec2 p,float t,float far){vec3 s=vec3(0.);for(int i=0;i<NW;i++){vec4 w=WD[i];float kw=6.2832/w.z,om=sqrt(9.8*kw)*.75;
+  float th=dot(w.xy,p)*kw-om*t+float(i)*1.7,e=exp(WK[i]*(sin(th)-1.)),f=1.-smoothstep(w.z*6.,w.z*22.,far);
+  s+=w.w*f*vec3(e-.3,WK[i]*e*cos(th)*kw*w.xy);}return s;}`;
+function seaH(x,z){const t=G.t,px=x,pz=z-dist%10000,far=Math.hypot(x,z);let h=0;
+  for(let i=0;i<SEA_W.length;i++){const w=SEA_W[i],kw=6.2832/w[2],om=Math.sqrt(9.8*kw)*.75,th=(w[0]*px+w[1]*pz)*kw-om*t+i*1.7;
+    const f=1-smooth(w[2]*6,w[2]*22,far);h+=w[3]*f*(Math.exp(w[4]*(Math.sin(th)-1))-.3)}
+  return h*seaMat.uniforms.uCalm.value*lerp(.55,1,smooth(-7,-30,x))*(1-smooth(250,600,far))}
+const seaMat=new THREE.ShaderMaterial({uniforms:Object.assign(SEA_U,SKY),
+ vertexShader:`uniform float uOff,uTime;varying vec3 vW;${BEND_GLSL}${SEA_GLSL}
+  void main(){vec4 w=modelMatrix*vec4(position,1.);float far=length(w.xz-cameraPosition.xz);
+   w.y+=seaWaves(vec2(w.x,w.z-uOff),uTime,far).x*seaEnv(w.x)*(1.-smoothstep(250.,600.,far));vW=w.xyz;w.xyz=bendW(w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
+ fragmentShader:`${NOISE}${SKYFN}uniform float uOff,uDay,uFoam;uniform vec3 uDeep,uShallow;varying vec3 vW;${SEA_GLSL}
+  void main(){vec2 p=vec2(vW.x,vW.z-uOff);float dist=length(vW-cameraPosition),env=seaEnv(vW.x);
+   vec3 sw=seaWaves(p,uTime,dist)*env;float crest=clamp(sw.x/(.55*env+.01)+.25,0.,1.);sw.yz*=2.4;   // steeper-looking faces without taller waves
+   // small ripples on top of the swell, only close by
+   float rk=1.-smoothstep(15.,90.,dist);vec2 q=p*.55+vec2(.25,.4)*uTime;float r0=vnoise(q),rx=vnoise(q+vec2(.2,0)),rz=vnoise(q+vec2(0,.2));
+   vec3 N=normalize(vec3(-sw.y+(r0-rx)*.35*rk*(.4+uCalm),1.,-sw.z+(r0-rz)*.35*rk*(.4+uCalm)));
+   vec3 V=normalize(cameraPosition-vW),L=uSunDir;float ndv=clamp(dot(N,V),0.,1.);
+   float fr=.02+.98*pow(1.-ndv,5.);fr*=.85;
+   vec3 R=reflect(-V,N);R.y=abs(R.y)+.02;R=normalize(R);vec3 refl=skyBase(R);
+   float day=.15+.85*uDay;vec3 amb=mix(uHor,uZen,.4);
+   vec3 body=mix(uDeep,uShallow,.25+.55*crest)*day*(.75+.35*max(dot(N,normalize(vec3(L.x,max(L.y,.15),L.z))),0.));
+   // light shining through the thin top of each swell
+   float th=pow(clamp(dot(V,-normalize(L+N*.5)),0.,1.),3.)*(.25+crest)+.25*crest*crest;
+   body+=uShallow*1.6*mix(vec3(1.),uSun,.5)*th*uDay*(1.-smoothstep(80.,400.,dist));
+   vec3 col=mix(body,refl,fr);
+   // sun path: sharp glints close by, a wide soft streak further out
+   float rs=max(dot(R,L),0.),pw=mix(700.,70.,smoothstep(8.,260.,dist));
+   col+=uSun*(pow(rs,pw)*mix(3.,.6,smoothstep(8.,260.,dist))+pow(rs,16.)*.03)*smoothstep(-.06,.03,L.y);
+   // foam: on the sharpest crests and where the swell slaps the pier
+   float fn=vnoise(p*vec2(.9,1.6)+vec2(uTime*.3,0.))*.6+vnoise(p*3.1-uTime*.2)*.4;
+   float foam=smoothstep(.72,.95,crest+fn*.25)*(1.-smoothstep(40.,180.,dist));
+   foam+=smoothstep(-9.5,-6.4,vW.x)*smoothstep(.35,.75,fn+.25*sin(p.y*.35+uTime*1.3+crest*2.))*.85;
+   foam=clamp(foam*uFoam,0.,1.);
+   vec3 fc=(amb*.75+uSun*max(L.y,.1)*.9)*day;col=mix(col,fc,foam*.85);
    float ff=1.-exp(-pow(dist*.0021,1.5));vec3 fd=normalize(vec3(vW.x-cameraPosition.x,.0015*dist+.002,vW.z-cameraPosition.z));
    col=mix(col,skyBase(fd),clamp(ff,0.,1.));
    float pk=max(col.r,max(col.g,col.b));col*=1./(1.+max(pk-.85,0.)*.9);   // shoulder: the brightest glare rolls off instead of clipping to white
    gl_FragColor=vec4(col,1.);}`});
-const sea=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000,200,200).rotateX(-Math.PI/2),seaMat);sea.position.set(-500,SEA_Y,-1200);sea.frustumCulled=false;scene.add(sea);
+// a grid that is ~0.6 m apart at the pier and grows geometrically outwards: rows in [-2500,60] across, [-3200,800] along the road
+function seaGeo(){const axis=(c,neg,pos,nN,nP,s0)=>{const side=(E,n)=>{let lo=1,hi=1.5;for(let k=0;k<60;k++){const r=(lo+hi)/2;s0*(Math.pow(r,n)-1)/(r-1)>E?hi=r:lo=r}
+    const r=(lo+hi)/2,o=[];let x=0,st=s0;for(let i=0;i<n;i++){x+=st;st*=r;o.push(x)}o[n-1]=E;return o};
+   return [...side(c-neg,nN).reverse().map(v=>c-v),c,...side(pos-c,nP).map(v=>c+v)]};
+  const xs=axis(-8,-2500,60,140,24,.55),zs=axis(-20,-3200,800,150,40,.55),nx=xs.length,pos=new Float32Array(nx*zs.length*3),idx=[];
+  zs.forEach((z,j)=>xs.forEach((x,i)=>pos.set([x,0,z],(j*nx+i)*3)));
+  for(let j=0;j<zs.length-1;j++)for(let i=0;i<nx-1;i++){const a=j*nx+i,b=a+1,c=a+nx,d=c+1;idx.push(a,c,b,b,c,d)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setIndex(idx);return g}
+const sea=new THREE.Mesh(seaGeo(),seaMat);sea.position.y=SEA_Y;sea.frustumCulled=false;scene.add(sea);
 
 /* ======================= static world: boardwalk, shore, rails, far scenery ======================= */
 const ROAD_W=8,ROAD_LEN=420,ROAD_Z0=20,SEGS=150;   // long meshes are subdivided along z so they can bend
@@ -646,8 +682,8 @@ function groundAt(x,s){let h=0,hole=false,kick=false;
 const SPAN=400,BEHIND=14;
 const _m=new THREE.Matrix4(),_q=new THREE.Quaternion(),_e=new THREE.Euler(),_v=new THREE.Vector3(),_s=new THREE.Vector3();
 const decor=[];
-function addDecor(geo,mat,items,{cast=true,recv=true,gap=false,scenery=false,map=null}={}){const im=new THREE.InstancedMesh(geo,mat,items.length);im.castShadow=cast;im.receiveShadow=recv;im.frustumCulled=false;
-  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(im);const d={im,items,gap,scenery,map};decor.push(d);return d}
+function addDecor(geo,mat,items,{cast=true,recv=true,gap=false,scenery=false,map=null,float=false}={}){const im=new THREE.InstancedMesh(geo,mat,items.length);im.castShadow=cast;im.receiveShadow=recv;im.frustumCulled=false;
+  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(im);const d={im,items,gap,scenery,map,float};decor.push(d);return d}
 // tree/scenery density setting (少/中/多): items are randomly placed, so drawing the first N is a random subset
 const TREE_K=[.32,.66,1];let treeLv=store.get('trees',TOUCH?1:2);
 function applyTrees(){for(const d of decor)if(d.scenery)d.im.count=Math.max(1,Math.round(d.items.length*TREE_K[treeLv]))}
@@ -657,7 +693,7 @@ function updateDecor(){const side=BOSS.cam>.05;   // side-view boss camera sits 
       while(z>BEHIND){it.s+=SPAN;z-=SPAN;if(it.re)it.re(it)}
       while(z<BEHIND-SPAN){it.s-=SPAN;z+=SPAN}                  // after a restart (dist back to 0) pull everything back into range
       const hide=(d.gap&&inHole(it.s))||(side&&(d.scenery||d.map===1)&&it.x>4.5&&it.x<(d.map===1?90:34));_e.set(it.rx||0,it.ry||0,it.rz||0);_q.setFromEuler(_e);
-      if(hide)_s.set(1e-4,1e-4,1e-4);else _s.set(it.sx||1,it.sy||1,it.sz||1);_m.compose(_v.set(it.x,it.y||0,z),_q,_s);d.im.setMatrixAt(i++,_m)}
+      if(hide)_s.set(1e-4,1e-4,1e-4);else _s.set(it.sx||1,it.sy||1,it.sz||1);_m.compose(_v.set(it.x,(it.y||0)+(d.float||it.fl?seaH(it.x,z):0),z),_q,_s);d.im.setMatrixAt(i++,_m)}
     d.im.instanceMatrix.needsUpdate=true}}
 const DR=rng(2024),dens=1.3;   // built at the maximum; the tree setting trims what is drawn
 // rail posts both sides + pilings into the sea on the left
@@ -698,8 +734,8 @@ const reShore=(min,max)=>it=>{it.x=min+DR()*(max-min);it.ry=DR()*6.28;const s=.7
 {const items=[];for(let k=0;k<Math.round(110*dens);k++){const it={s:DR()*SPAN};reShore(5.5,40)(it);it.sy*=.6;it.re=o=>{reShore(5.5,40)(o);o.sy*=.6};items.push(it)}addDecor(rockGeo(3),M.vcol,items,{scenery:true,map:[0,1]})}
 {const g=new THREE.SphereGeometry(1,16,10,0,Math.PI*2,0,Math.PI/2);const items=[];for(let k=0;k<Math.round(90*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=5+DR()*60;o.sx=2+DR()*4;o.sz=2+DR()*5;o.sy=.4+DR()*.7;o.y=-.15;o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(g,M.snowCap,items,{cast:false,scenery:true,map:[0,1]})}
 // the sea side: floes near the pier, drifting ice chunks, and real icebergs further out
-{const g=new THREE.CylinderGeometry(1,1.08,.35,7);const items=[];for(let k=0;k<Math.round(90*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-6.5-DR()*(DR()<.55?16:100);o.y=SEA_Y+.05;o.sx=.8+DR()*3.5;o.sz=.8+DR()*3;o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(g,M.snowCap,items,{cast:false,scenery:true,map:[0,1]})}
-{const items=[];for(let k=0;k<Math.round(40*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-8-DR()*40;o.y=SEA_Y-.15;const s=.6+DR()*1.4;o.sx=s*(1+DR());o.sy=s*(.5+DR()*.6);o.sz=s*(1+DR());o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(rockGeo(17,.25,[.62,.84,.97]),M.berg,items,{cast:false,scenery:true,map:[0,1]})}
+{const g=new THREE.CylinderGeometry(1,1.08,.35,7);const items=[];for(let k=0;k<Math.round(90*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-6.5-DR()*(DR()<.55?16:100);o.y=SEA_Y+.05;o.sx=.8+DR()*3.5;o.sz=.8+DR()*3;o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(g,M.snowCap,items,{cast:false,scenery:true,map:[0,1],float:true})}
+{const items=[];for(let k=0;k<Math.round(40*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-8-DR()*40;o.y=SEA_Y-.15;const s=.6+DR()*1.4;o.sx=s*(1+DR());o.sy=s*(.5+DR()*.6);o.sz=s*(1+DR());o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(rockGeo(17,.25,[.62,.84,.97]),M.berg,items,{cast:false,scenery:true,map:[0,1],float:true})}
 {const items=[];for(let k=0;k<Math.round(26*dens);k++){const it={s:DR()*SPAN};const f=o=>{o.x=-45-DR()*150;o.y=SEA_Y-.4;const s=3+DR()*5.5;o.sx=s*(1.2+DR()*.8);o.sy=s*(.45+DR()*.45);o.sz=s*(1.1+DR()*.6);o.ry=DR()*6};f(it);it.re=f;items.push(it)}addDecor(bergGeo(23),M.berg,items,{cast:false,scenery:true,map:[0,1]})}
 // ---- aurora glacier canyon (map 1): a towering ice wall close on the shore side, a second wall across the fjord, glowing crystals in between ----
 // each block is a finely cut tower: vertical flutes (columns standing proud of dark crevices), terraces that catch snow, a jagged top
@@ -720,7 +756,7 @@ function crystalGeo(){const parts=[],sp=(r,h,x,z,tx,tz)=>parts.push(new THREE.Co
  addDecor(cliffGeo(4),M.cliff,wall(44,o=>{o.x=20+DR()*6;o.sx=11+DR()*5;o.sz=12+DR()*9;o.sy=15+DR()*20}),{cast:false,map:1});
  addDecor(cliffGeo(9,4,6),M.cliff,wall(26,o=>{o.x=44+DR()*22;o.sx=22+DR()*10;o.sz=22+DR()*10;o.sy=42+DR()*36}),{cast:false,recv:false,map:1});
  addDecor(cliffGeo(15,4,6),M.cliff,wall(30,o=>{o.x=-78-DR()*26;o.sx=24+DR()*12;o.sz=22+DR()*10;o.sy=30+DR()*34}),{cast:false,recv:false,map:1});
- const cg=crystalGeo(),cry=(n,seaK)=>{const items=[];for(let k=0;k<n;k++){const it={s:DR()*SPAN},f=o=>{const sea=DR()<seaK,big=DR()<.25;o.x=sea?-7-DR()*30:big?10+DR()*3:4.9+DR()*5;o.y=sea?SEA_Y-.3:-.05;
+ const cg=crystalGeo(),cry=(n,seaK)=>{const items=[];for(let k=0;k<n;k++){const it={s:DR()*SPAN},f=o=>{const sea=DR()<seaK,big=DR()<.25;o.x=sea?-7-DR()*30:big?10+DR()*3:4.9+DR()*5;o.y=sea?SEA_Y-.3:-.05;o.fl=sea;
      const s=sea?1+DR()*1.6:big?1.8+DR()*1.4:.5+DR()*.9;o.sx=o.sz=s;o.sy=s*(.8+DR()*.5);o.ry=DR()*6.28};f(it);it.re=f;items.push(it)}return items};
  addDecor(cg,M.crystalA,cry(46,.35),{cast:false,recv:false,scenery:true,map:1});addDecor(cg,M.crystalB,cry(28,.35),{cast:false,recv:false,scenery:true,map:1})}
 // ---- cherry-blossom lake (map 2): blossom trees, bushes, flowers and bare rocks on the grass, lily pads and lotus buds on the lake ----
@@ -741,9 +777,9 @@ function flowerGeo(cols,seed){const R=rng(seed),parts=[],col=[],add=(g,c)=>{g=g.
  addDecor(new THREE.SphereGeometry(1,8,4,0,Math.PI*2,0,Math.PI/2),M.leaf,sc(70,o=>{o.x=5+DR()*45;o.sx=.7+DR()*1.3;o.sz=.7+DR()*1.5;o.sy=.5+DR()*.7;o.y=-.1;o.ry=DR()*6}),{...S2,cast:false});
  const fl=o=>{o.x=4.7+DR()*(DR()<.6?7:30);o.y=-.08;const s=.8+DR()*.9;o.sx=o.sy=o.sz=s;o.ry=DR()*6};
  addDecor(flowerGeo([[1,.62,.78],[1,.95,.97],[1,.75,.85]],3),M.vcol,sc(70,fl),{...S2,cast:false});addDecor(flowerGeo([[1,.85,.25],[.72,.55,1],[1,1,1]],8),M.vcol,sc(60,fl),{...S2,cast:false});
- const pads=[];for(let k=0;k<70;k++)pads.push({s:DR()*SPAN,x:-6.3-DR()*(DR()<.6?14:60),y:SEA_Y+.2,sx:.6+DR()*1.1,ry:DR()*6});for(const o of pads)o.sz=o.sx*(.8+DR()*.3);
- addDecor(new THREE.CylinderGeometry(1,1,.1,12,1,false,.5,5.6),M.lily,pads,{cast:false,scenery:true,map:2});
- addDecor(new THREE.IcosahedronGeometry(.3,0).scale(1,.85,1),M.blossom,pads.filter((o,i)=>i%3===0).map(o=>({s:o.s,x:o.x,y:SEA_Y+.42})),{cast:false,recv:false,scenery:true,map:2})}
+ const pads=[];for(let k=0;k<70;k++)pads.push({s:DR()*SPAN,x:-6.3-DR()*(DR()<.6?14:60),y:SEA_Y+.07,sx:.6+DR()*1.1,ry:DR()*6});for(const o of pads)o.sz=o.sx*(.8+DR()*.3);
+ addDecor(new THREE.CylinderGeometry(1,1,.1,12,1,false,.5,5.6),M.lily,pads,{cast:false,scenery:true,map:2,float:true});
+ addDecor(new THREE.IcosahedronGeometry(.3,0).scale(1,.85,1),M.blossom,pads.filter((o,i)=>i%3===0).map(o=>({s:o.s,x:o.x,y:SEA_Y+.29})),{cast:false,recv:false,scenery:true,map:2,float:true})}
 // cabins with warm windows (few, recycled)
 const cabins=[];
 {function cabin(seed){const R=rng(seed),g=new THREE.Group();const w=3+R()*1.5,d=3+R(),h=2.2;
@@ -963,7 +999,7 @@ function spawnSight(){const e=elevAt(dist);
 function updateSights(dt){if(G.state==='run'&&BOSS.phase==='none'&&bossNext()-dist>230&&(SG.t=Math.max(0,SG.t-dt))<=0&&!voBusy()){spawnSight();SG.t=12+Math.random()*8}
   for(const k in SIGHT){const o=SIGHT[k];if(!o.on)continue;o.t+=dt;if(o.weather){if(o.t>o.life)o.on=false;continue}
     if(BOSS.phase!=='none'){sightOff(o);continue}if(o.move)o.s+=G.speed*o.move*dt;const z=dist-o.s;
-    if(z>BEHIND+6||o.life&&o.t>o.life){sightOff(o);continue}o.g.position.set(o.x,o.g.position.y,z);o.upd(o,dt,z)}
+    if(z>BEHIND+6||o.life&&o.t>o.life){sightOff(o);continue}o.g.position.set(o.x,o.x<-6.5?seaH(o.x,z)*.85:o.g.position.y,z);o.upd(o,dt,z)}
   const sn=SIGHT.snow.on?SIGHT.snow:SIGHT.petals,rb=SIGHT.rainbow;SG.snowK=damp(SG.snowK,sn.on&&sn.t<sn.life-6?1:0,.5,dt);snowMat.uniforms.uK.value=SG.snowK;
   SG.bowK=damp(SG.bowK,rb.on&&rb.t<rb.life-8?1:0,.35,dt);bowMat.uniforms.uA.value=SG.bowK;bow.visible=SG.bowK>.01}
 // scarf tails: verlet ribbons trailing in the wind
@@ -1224,7 +1260,8 @@ const bossFlying=()=>BOSS.phase==='transIn'||BOSS.phase==='fight'||BOSS.phase===
 const _w=new THREE.Vector3(),_pc=new THREE.Vector3();
 function bossHP(L){return 30+15*(L-1)}
 function startBoss(){BOSS.phase='warn';BOSS.t=0;banner('恶龙来袭！',`第 ${BOSS.level} 关 · 炎翼恶龙`);sfx('roar');cheer('warn',null,2);PL.boost=0;if(PL.fly>0){PL.fly=0;PL.invT=1.2}}
-function hearts(){$('hearts').innerHTML=[0,1,2].map(i=>`<i class="${i<BOSS.hearts?'':'off'}">♥</i>`).join('')}
+const HEARTS=6;   // penguin's lives in the dragon fight (v0.14: was 3)
+function hearts(){$('hearts').innerHTML=[...Array(HEARTS).keys()].map(i=>`<i class="${i<BOSS.hearts?'':'off'}">♥</i>`).join('')}
 function shootFireball(aim,spread,spd){DRG.mouth.getWorldPosition(_w);const f=getFB();f.on=true;f.g.visible=true;f.g.position.set(0,_w.y,_w.z);
   f.v.set(0,aim.y-_w.y,aim.z-_w.z).normalize();const a=spread,c=Math.cos(a),s=Math.sin(a);const vy=f.v.y*c-f.v.z*s,vz=f.v.y*s+f.v.z*c;f.v.set(0,vy,vz).multiplyScalar(spd);sfx('fire')}
 function hitPenguin(){if(BOSS.inv>0||G.state!=='run')return;BOSS.hearts--;BOSS.inv=1.6;G.shake=.45;sfx('hurt');hearts();if(BOSS.hearts===1)cheer('last',null,2);else if(BOSS.hearts>1)cheer('hurt');emit(sparks,0,BOSS.py+.6*PEN_S,BOSS.pz,14,3,2,.5,1.8);if(BOSS.hearts<=0)crash('boss')}
@@ -1258,7 +1295,7 @@ function updateBoss(dt){
   BOSS.t+=dt;const D=DRG;if(BOSS.inv>0)BOSS.inv-=dt;
   if(BOSS.phase==='warn'){if(BOSS.t>1.2&&!PL.air&&PL.fly<=0){BOSS.phase='transIn';BOSS.t=0;BOSS.py=PL.y;BOSS.pz=0;PL.lane=1}}
   else if(BOSS.phase==='transIn'){BOSS.cam=smooth(0,1,BOSS.t/1.8);BOSS.py=damp(BOSS.py,3.6,2.5,dt);
-    if(BOSS.t>1.8){BOSS.phase='fight';BOSS.t=0;cheer('fight');D.root.visible=true;D.root.position.set(0,7,-48);D.root.rotation.set(0,.5,0);BOSS.hp=BOSS.max=bossHP(BOSS.level);BOSS.hearts=3;BOSS.inv=0;
+    if(BOSS.t>1.8){BOSS.phase='fight';BOSS.t=0;cheer('fight');D.root.visible=true;D.root.position.set(0,7,-48);D.root.rotation.set(0,.5,0);BOSS.hp=BOSS.max=bossHP(BOSS.level);BOSS.hearts=HEARTS;BOSS.inv=0;
       BOSS.ai={st:'enter',t:0,next:2};hearts();$('hearts').classList.add('on');$('bossUI').classList.add('on');$('bossUI').querySelector('b').style.width='100%';
       $('bossUI').querySelector('.bn').textContent=`炎翼恶龙 · 第 ${BOSS.level} 关`;hint(TOUCH?'拖动屏幕移动 · 自动吐鱼攻击':'方向键 / WASD 移动 · 按住空格吐鱼攻击',3.5);sfx('roar')}}
   else if(BOSS.phase==='fight'){
@@ -1649,7 +1686,7 @@ $('shotBtn').onclick=screenshot;$('linkBtn').onclick=copyLink;
 
 /* ======================= maps ======================= */
 function setMap(id){MAP.id=id;const d=DECK_TEX[id],sp=id===2;M.deck.map=d.map;M.deck.normalMap=d.normalMap;M.deck.roughnessMap=d.roughnessMap;
-  seaMat.uniforms.uDeep.value.set([0x0f3248,0x06203a,0x14506a][id]);seaMat.uniforms.uShallow.value.set([0x2f7a88,0x1c6688,0x4aa89c][id]);SKY.uAur.value=id===1?1:0;gradePass.uniforms.uTone.value=id===1?.25:1;
+  seaMat.uniforms.uDeep.value.set([0x0f3248,0x06203a,0x14506a][id]);seaMat.uniforms.uShallow.value.set([0x2f7a88,0x1c6688,0x4aa89c][id]);seaMat.uniforms.uCalm.value=[1,.75,.5][id];seaMat.uniforms.uFoam.value=[1,.45,.12][id];SKY.uAur.value=id===1?1:0;gradePass.uniforms.uTone.value=id===1?.25:1;
   M.snow.map=sp?grassT:snowT.map;M.snow.roughness=sp?.92:.62;M.cabinRoof.color.set(sp?0xb5523a:0xf2f5fb);for(const m of railSnowM)m.visible=!sp;for(const m of farIce)m.visible=!sp;   // spring: grass, no snow on the rails / roofs, no ice out on the lake
   envE=999;for(const k in SIGHT)sightOff(SIGHT[k]);SG.t=Math.max(SG.t,5);VO.e=null;VO.day=null}
 // random rotation (v0.13.1): each round visits the three maps once in a shuffled order; a new round never starts on the map you are standing in.
